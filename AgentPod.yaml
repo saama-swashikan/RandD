@@ -5,7 +5,7 @@ metadata:
 spec:
   containers:
   - name: swashikan
-    image: 791532114280.dkr.ecr.us-east-1.amazonaws.com/swashikan:lsacone
+    image: 791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-apps:migration-23r2
     resources:
         limits:
           cpu: "500m"
