@@ -4,13 +4,30 @@ pipeline {
        yamlFile 'AgentPod.yaml'
          }
     }
+    environment {
+        PDA_SERVICE = "791532114280"
+        LSAC_OAUTH_ENDPOINT = "351054065682"
+        LSAC_APP_CLIENT_ID = "sch-dev2-apps"
+        LSAC_APP_CLIENT_SECRET = "sch-perf-apps"
+        PRIMARY_ACCOUNT_NAME = "primary_account_name.framework.perf.lsacone.com"
+    }
     stages{
         stage('migration'){
             steps{
                 container('swashikan'){
                     script{
                                     sh """
-                                        env
+                                        export pda_service=${PDA_SERVICE}
+                                        export lsac_oauth_endpoint=${LSAC_OAUTH_ENDPOINT}  
+                                        export lsac_app_client_id=${lsac_app_client_id}  
+                                        export lsac_app_client_secret=${lsac_app_client_secret}  
+                                        export primary_account_name=${primary_account_name}
+
+                                        echo $pda_service
+                                        echo $lsac_oauth_endpoint
+                                        echo $lsac_app_client_id
+                                        echo $lsac_app_client_secret
+                                        echo $primary_account_name
                                     """  
                     }
                 }
