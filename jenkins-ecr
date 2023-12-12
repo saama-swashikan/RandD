@@ -10,11 +10,7 @@ pipeline {
                 container('swashikan'){
                     script{
                                     sh """
-                                        echo $pda_service
-                                        echo $lsac_oauth_endpoint
-                                        echo $lsac_app_client_id
-                                        echo $lsac_app_client_secret
-                                        echo $primary_account_name
+                                        env
                                     """  
                     }
                 }
