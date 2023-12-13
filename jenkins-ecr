@@ -6,9 +6,9 @@ agent {
     }
 environment {
     source_aws_account = "791532114280"
-    dest_aws_account = "351054065682"
+    dest_aws_account = "791532114280"
     source_aws_repo = "sch-dev2-apps"
-    dest_aws_repo = "sch-perf-apps"
+    dest_aws_repo = "swashikan"
  fnf_url="sso.framework.perf.lsacone.com"
      dh_url="sch.sit2.lsacone.com"
      grant_type="client_credentials"
@@ -900,7 +900,7 @@ container('sch-code-builder'){
                     withCredentials([[
                         $class: 'AmazonWebServicesCredentialsBinding',
                         accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your second AWS credentials ID
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
                         sh '''
