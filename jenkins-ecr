@@ -908,6 +908,7 @@ container('sch-code-builder'){
                     export $(cat uploaded_file.txt)
                     aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com
                     aws ecr describe-images --repository-name ${dest_aws_repo} --region us-east-1  > scale.txt
+                    cat scale.txt
                     if grep -w $scale_tag scale.txt; 
                     then 
                         date=$(date +%Y_%m_%d-%H%M)
