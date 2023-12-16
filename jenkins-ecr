@@ -43,6 +43,7 @@ ls -lart
 pwd
 cd /var/lib/containers/storage/vfs-images
 du -sh
+ls -lart
                                     """
                                 }                       
                             } else if (params.SOURCE_AWS_ACCOUNT == 'ai-research-saama') {
