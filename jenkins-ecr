@@ -1,34 +1,4 @@
 
-podTemplate(
-  containers: [
-    containerTemplate(
-      name: 'swashikan', 
-      image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/swashikan:lsacone',
-      command: 'cat',
-      ttyEnabled: true,
-      resourceLimitEphemeralStorage: '10Gi',
-      resourceLimitMemory: '2Gi'
-    )
-  ],
-  volumes: [
-    dynamicPVC(requestsSize : '500Gi', mountPath: '/home/node/data')
-  ]
-) 
-
-{
-  node(POD_LABEL) {
-    stage('Run plan'){
-      container('swashikan'){
-        script {
-                                    sh '''
-                                        df -h
-                                    '''
-                  
-          }
-      }
-    }
-  }
-}
 pipeline {
     agent {
      kubernetes {
@@ -70,6 +40,37 @@ pipeline {
         )             
     }
     stages{
+
+podTemplate(
+  containers: [
+    containerTemplate(
+      name: 'swashikan', 
+      image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/swashikan:lsacone',
+      command: 'cat',
+      ttyEnabled: true,
+      resourceLimitEphemeralStorage: '10Gi',
+      resourceLimitMemory: '2Gi'
+    )
+  ],
+  volumes: [
+    dynamicPVC(requestsSize : '500Gi', mountPath: '/home/node/data')
+  ]
+) 
+
+{
+  node(POD_LABEL) {
+    stage('Run plan'){
+      container('swashikan'){
+        script {
+                                    sh '''
+                                        df -h
+                                    '''
+                  
+          }
+      }
+    }
+  }
+}
         stage('Pull Source Image'){
             steps{
                 container('swashikan'){
