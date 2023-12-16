@@ -7,7 +7,7 @@ podTemplate(
       command: 'cat',
       ttyEnabled: true,
       resourceLimitEphemeralStorage: '10Gi',
-      resourceLimitMemory: '2Gi'
+      resourceLimitMemory: '8Gi'
     )
   ],
   volumes: [
