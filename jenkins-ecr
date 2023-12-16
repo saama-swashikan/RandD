@@ -21,6 +21,7 @@ podTemplate(
       container('swashikan'){
         script {
                                     sh '''
+                                        df -h
                                         export pda_service=${PDA_SERVICE}
                                         export lsac_oauth_endpoint=${LSAC_OAUTH_ENDPOINT}  
                                         export lsac_app_client_id=${lsac_app_client_id}  
