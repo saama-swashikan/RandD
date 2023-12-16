@@ -25,36 +25,27 @@ podTemplate(
 
 {
   node(POD_LABEL) {
-    stage('Run init') {
-        container('swashikan') {
-          checkout scm
-          script {
-            withCredentials([[
-                $class: 'AmazonWebServicesCredentialsBinding',
-                credentialsId: "aws_sqdsam_jenkins",
-                accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-            ],[
-              $class: 'SSHUserPrivateKeyBinding',
-              credentialsId: "jenkins_github_ssh_key",
-              usernameVariable: "username",
-              keyFileVariable: "ssh_key",
-              passphraseVariable: "passphrase",
+    stage('migration'){
+            steps{
+                container('swashikan'){
+                    script{
+                                    sh """
+                                        export pda_service=${PDA_SERVICE}
+                                        export lsac_oauth_endpoint=${LSAC_OAUTH_ENDPOINT}  
+                                        export lsac_app_client_id=${lsac_app_client_id}  
+                                        export lsac_app_client_secret=${lsac_app_client_secret}  
+                                        export primary_account_name=${primary_account_name}
 
-            ]]) {
-                sh '''
-                  df -h
-                  mkdir ~/.ssh
-                  ssh-keyscan github.com >> ~/.ssh/known_hosts
-                  chmod 600 $ssh_key
-                  echo "IdentityFile $ssh_key" > ~/.ssh/config
-                  cd terragrunt/live/sdqsam/lsac-perf-sdq
-
-                '''
+                                        echo $pda_service
+                                        echo $lsac_oauth_endpoint
+                                        echo $lsac_app_client_id
+                                        echo $lsac_app_client_secret
+                                        echo $primary_account_name
+                                    """  
+                    }
+                }
             }
-          }
         }
-    }
     stage('Run plan') {
       container('terragrunt-2'){
         script {
