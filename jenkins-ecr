@@ -50,7 +50,6 @@ podTemplate(
         )             
     }
   node(POD_LABEL) {
-    stages{
         stage('Pull Source Image'){
                 container('swashikan'){
                     script{
@@ -222,7 +221,6 @@ podTemplate(
                                 }
                             } 
                         }    
-                    }
                 }
             }
         }
