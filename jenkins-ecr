@@ -28,8 +28,9 @@ podTemplate(
                                 $class: 'AmazonWebServicesCredentialsBinding',
                                 credentialsId: 'app.jenkins.ecr-migration'
                                 ]]) {
+env.XDG_RUNTIME_DIR = '/home/node/data'
                                     sh """
-export XDG_RUNTIME_DIR=/home/node/data
+
 df -h
 lsblk
 echo $XDG_RUNTIME_DIR
