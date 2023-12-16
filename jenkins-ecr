@@ -29,6 +29,8 @@ podTemplate(
                                 credentialsId: 'app.jenkins.ecr-migration'
                                 ]]) {
                                     sh """
+df -h
+lsblk
                                         aws ecr get-login-password --region ${Source_AWS_Region} | podman login --username AWS --password-stdin 791532114280.dkr.ecr.${Source_AWS_Region}.amazonaws.com
                                         podman pull 791532114280.dkr.ecr.${Source_AWS_Region}.amazonaws.com/${Source_Image_Tag}
                                         echo 791532114280.dkr.ecr.${Source_AWS_Region}.amazonaws.com/${Source_Image_Tag} >> images.txt
@@ -237,24 +239,13 @@ pipeline {
         stage('Pull Source Image'){
             steps{
                 container('swashikan'){
-                    script{
-                        def files = params.Source_ECR_Repo_and_Image_Tags.split('\n')                    
-                        for (Source_Image_Tag in files) {
-                            echo "Pulling ${Source_Image_Tag} on ${Source_AWS_Region}"
-                            if (params.SOURCE_AWS_ACCOUNT == 'lsacone-dev') {
-                                withCredentials([[
-                                $class: 'AmazonWebServicesCredentialsBinding',
-                                credentialsId: 'app.jenkins.ecr-migration'
-                                ]]) {
+                    script {
                                     sh """
-ls
+                                        echo "Worked fine"
                                     """
                                 }    
                             }
                         }
                     }
-                }
-            }
-        }
-   }
+                }  
 }
