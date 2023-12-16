@@ -96,8 +96,7 @@ podTemplate(
       }
     }
   }
-stage('Push Destination Image'){
-            steps{
+        stage('Push Destination Image'){
                 container('swashikan'){
                     script{
                         def filess = params.Destination_ECR_Repo_and_Image_Tags.split('\n')                    
@@ -190,7 +189,6 @@ stage('Push Destination Image'){
                             } 
                         }    
                     }
-                }
             }
         }
 }
