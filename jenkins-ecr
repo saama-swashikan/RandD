@@ -30,11 +30,6 @@ podTemplate(
   }
 }
 pipeline {
-    agent {
-     kubernetes {
-       yamlFile 'AgentPod.yaml'
-         }
-    }
     parameters {
         choice(
             name: 'SOURCE_AWS_ACCOUNT', 
