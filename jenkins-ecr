@@ -1,9 +1,20 @@
+
+podTemplate(
+  containers: [
+    containerTemplate(
+      name: 'swashikan', 
+      image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/swashikan:lsacone',
+      command: 'cat',
+      ttyEnabled: true,
+      resourceLimitEphemeralStorage: '10Gi',
+      resourceLimitMemory: '2Gi'
+    )
+  ],
+  volumes: [
+    dynamicPVC(requestsSize : '200Gi', mountPath: '/home/node/data')
+  ]
+) 
 pipeline {
-    agent {
-     kubernetes {
-       yamlFile 'AgentPod.yaml'
-         }
-    }
     parameters {
         choice(
             name: 'SOURCE_AWS_ACCOUNT', 
@@ -38,9 +49,10 @@ pipeline {
             description: "Mention the Destination AWS Repository with Image Tag which will be as: ECR-Repository:Image-Tag \nlsac-sit-sdq:tag-213-23234-3-new\nairflow:tag-456032434-new\nsdq:tag-5643-344-425-new \nMake Sure There is No Space at the end of each line "
         )             
     }
-    stages{
+}
+{
+  node(POD_LABEL) {
         stage('Pull Source Image'){
-            steps{
                 container('swashikan'){
                     script{
                         def files = params.Source_ECR_Repo_and_Image_Tags.split('\n')                    
@@ -117,11 +129,9 @@ pipeline {
                             }
                         }    
                     }
-                }
             }
         }
         stage('Push Destination Image'){
-            steps{
                 container('swashikan'){
                     script{
                         def filess = params.Destination_ECR_Repo_and_Image_Tags.split('\n')                    
@@ -214,7 +224,6 @@ pipeline {
                             } 
                         }    
                     }
-                }
             }
         }
     }       
