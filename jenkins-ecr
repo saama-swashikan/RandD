@@ -41,7 +41,7 @@ lsblk
 ls /var/lib/containers/storage/vfs-images
 ls -lart
 pwd
-du -h /var/lib/containers/
+du -h /var/lib/containers/storage/
                                     """
                                 }                       
                             } else if (params.SOURCE_AWS_ACCOUNT == 'ai-research-saama') {
