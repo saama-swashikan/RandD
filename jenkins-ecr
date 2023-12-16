@@ -40,7 +40,7 @@ echo $XDG_RUNTIME_DIR
                                         unset AWS_ACCESS_KEY_ID
                                         unset AWS_SECRET_ACCESS_KEY
                                         cat images.txt
-ls /var/lib/containers/storage
+ls /var/lib/containers/storage/vfs-images
 ls -lart
 ls -lart
 pwd
