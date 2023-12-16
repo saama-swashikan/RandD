@@ -26,7 +26,6 @@ podTemplate(
 {
   node(POD_LABEL) {
     stage('migration'){
-            steps{
                 container('swashikan'){
                     script{
                                     sh """
@@ -44,7 +43,6 @@ podTemplate(
                                     """  
                     }
                 }
-            }
         }
     stage('Run plan') {
       container('terragrunt-2'){
