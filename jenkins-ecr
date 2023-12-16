@@ -8,14 +8,6 @@ podTemplate(
       ttyEnabled: true,
       resourceLimitEphemeralStorage: '10Gi',
       resourceLimitMemory: '2Gi'
-    ),
-    containerTemplate(
-      name: 'terragrunt-2', 
-      image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/terragrunt-build:bcb224c33-2023-04-05-102153',
-      command: 'cat',
-      ttyEnabled: true,
-      resourceLimitEphemeralStorage: '10Gi',
-      resourceLimitMemory: '2Gi'
     )
   ],
   volumes: [
@@ -25,27 +17,8 @@ podTemplate(
 
 {
   node(POD_LABEL) {
-    stage('migration'){
-                container('swashikan'){
-                    script{
-                                    sh """
-                                        export pda_service=${PDA_SERVICE}
-                                        export lsac_oauth_endpoint=${LSAC_OAUTH_ENDPOINT}  
-                                        export lsac_app_client_id=${lsac_app_client_id}  
-                                        export lsac_app_client_secret=${lsac_app_client_secret}  
-                                        export primary_account_name=${primary_account_name}
-
-                                        echo $pda_service
-                                        echo $lsac_oauth_endpoint
-                                        echo $lsac_app_client_id
-                                        echo $lsac_app_client_secret
-                                        echo $primary_account_name
-                                    """  
-                    }
-                }
-        }
-    stage('Run plan') {
-      container('terragrunt-2'){
+    stage('Run plan'){
+      container('swashikan'){
         script {
             withCredentials([[
                 $class: 'AmazonWebServicesCredentialsBinding',
@@ -60,16 +33,23 @@ podTemplate(
               passphraseVariable: "passphrase",
 
             ]]) {
-                sh '''
-                  mkdir ~/.ssh
-                  ssh-keyscan github.com >> ~/.ssh/known_hosts
-                  chmod 600 $ssh_key
-                  echo "IdentityFile $ssh_key" > ~/.ssh/config
-                  cd terragrunt/live/sdqsam/lsac-perf-sdq
-                '''
-            }
+                                    sh '''
+                                        export pda_service=${PDA_SERVICE}
+                                        export lsac_oauth_endpoint=${LSAC_OAUTH_ENDPOINT}  
+                                        export lsac_app_client_id=${lsac_app_client_id}  
+                                        export lsac_app_client_secret=${lsac_app_client_secret}  
+                                        export primary_account_name=${primary_account_name}
+
+                                        echo $pda_service
+                                        echo $lsac_oauth_endpoint
+                                        echo $lsac_app_client_id
+                                        echo $lsac_app_client_secret
+                                        echo $primary_account_name
+                                    '''
+                  
           }
       }
     }
   }
+}
 }
