@@ -11,7 +11,7 @@ podTemplate(
     )
   ],
   volumes: [
-    dynamicPVC(requestsSize : '500Gi', mountPath: '/home/jenkins/agent')
+    dynamicPVC(requestsSize : '500Gi', mountPath: '/var/lib/containers')
   ]
 ) 
 
