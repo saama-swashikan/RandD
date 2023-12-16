@@ -31,7 +31,7 @@ podTemplate(
                                     sh """
 df -h
 lsblk
-mount --rbind /var/lib/containers /home/node/data
+sudo mount --rbind /var/lib/containers /home/node/data
 
                                         aws ecr get-login-password --region ${Source_AWS_Region} | podman login --username AWS --password-stdin 791532114280.dkr.ecr.${Source_AWS_Region}.amazonaws.com
                                         podman pull 791532114280.dkr.ecr.${Source_AWS_Region}.amazonaws.com/${Source_Image_Tag}
