@@ -50,10 +50,10 @@ podTemplate(
 ) 
 
 {
-  node(POD_LABEL) {
-    stage('Pull Destination Image'){
-      container('swashikan'){
-        script {
+    node(POD_LABEL) {
+        stage('Pull Destination Image'){
+                container('swashikan'){
+                    script {
                         def files = params.Source_ECR_Repo_and_Image_Tags.split('\n')                    
                         for (Source_Image_Tag in files) {
                             echo "Pulling ${Source_Image_Tag} on ${Source_AWS_Region}"
@@ -127,9 +127,9 @@ podTemplate(
                                 }
                             }
                         }    
-      }
-    }
-  }
+                    }
+                }
+        }
         stage('Push Destination Image'){
                 container('swashikan'){
                     script{
@@ -223,7 +223,7 @@ podTemplate(
                             } 
                         }    
                     }
-            }
+                }
         }
-}
+    }
 }
