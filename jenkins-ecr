@@ -40,7 +40,6 @@ echo $XDG_RUNTIME_DIR
                                         unset AWS_ACCESS_KEY_ID
                                         unset AWS_SECRET_ACCESS_KEY
                                         cat images.txt
-cat ~/.config/containers/storage.conf | grep "graphroot"
 ls /var/lib/containers/storage
 ls -lart
 ls -lart
