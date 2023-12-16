@@ -38,6 +38,7 @@ lsblk
                                         unset AWS_SECRET_ACCESS_KEY
                                         cat images.txt
 ls -lart
+pwd
                                     """
                                 }                       
                             } else if (params.SOURCE_AWS_ACCOUNT == 'ai-research-saama') {
