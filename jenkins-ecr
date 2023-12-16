@@ -20,19 +20,6 @@ podTemplate(
     stage('Run plan'){
       container('swashikan'){
         script {
-            withCredentials([[
-                $class: 'AmazonWebServicesCredentialsBinding',
-                credentialsId: "aws_sqdsam_jenkins",
-                accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-            ],[
-              $class: 'SSHUserPrivateKeyBinding',
-              credentialsId: "jenkins_github_ssh_key",
-              usernameVariable: "username",
-              keyFileVariable: "ssh_key",
-              passphraseVariable: "passphrase",
-
-            ]]) {
                                     sh '''
                                         export pda_service=${PDA_SERVICE}
                                         export lsac_oauth_endpoint=${LSAC_OAUTH_ENDPOINT}  
@@ -51,5 +38,4 @@ podTemplate(
       }
     }
   }
-}
 }
