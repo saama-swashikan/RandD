@@ -28,7 +28,7 @@ podTemplate(
                                 $class: 'AmazonWebServicesCredentialsBinding',
                                 credentialsId: 'app.jenkins.ecr-migration'
                                 ]]) {
-env.XDG_RUNTIME_DIR = '/home/node/data'
+env.XDG_RUNTIME_DIR = '/var/lib/containers/storage/vfs-images'
                                     sh """
 
 df -h
