@@ -38,7 +38,7 @@ lsblk
                                         unset AWS_ACCESS_KEY_ID
                                         unset AWS_SECRET_ACCESS_KEY
                                         cat images.txt
-cd /var/lib/containers/storage/overlay
+
 ls -lart
 cp -r /var/lib/containers/storage/overlay/* /home/node/data
 ls -lart
