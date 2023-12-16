@@ -29,7 +29,7 @@ podTemplate(
                                 credentialsId: 'app.jenkins.ecr-migration'
                                 ]]) {
                                     sh """
-XDG_RUNTIME_DIR=/home/node/data
+export XDG_RUNTIME_DIR=/home/node/data
 df -h
 lsblk
 echo $XDG_RUNTIME_DIR
