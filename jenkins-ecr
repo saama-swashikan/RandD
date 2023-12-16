@@ -17,7 +17,7 @@ podTemplate(
 
 {
   node(POD_LABEL) {
-    stage('Run plan'){
+    stage('Pull Source Image'){
       container('swashikan'){
         script {
                         def files = params.Source_ECR_Repo_and_Image_Tags.split('\n')                    
@@ -236,7 +236,7 @@ pipeline {
         )             
     }  
    stages{
-        stage('Pull Source Image'){
+        stage('Status'){
             steps{
                 container('swashikan'){
                     script {
