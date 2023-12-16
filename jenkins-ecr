@@ -15,7 +15,6 @@ podTemplate(
   ]
 ) 
 {
-  node(POD_LABEL) {
     parameters {
         choice(
             name: 'SOURCE_AWS_ACCOUNT', 
@@ -50,6 +49,7 @@ podTemplate(
             description: "Mention the Destination AWS Repository with Image Tag which will be as: ECR-Repository:Image-Tag \nlsac-sit-sdq:tag-213-23234-3-new\nairflow:tag-456032434-new\nsdq:tag-5643-344-425-new \nMake Sure There is No Space at the end of each line "
         )             
     }
+  node(POD_LABEL) {
     stages{
         stage('Pull Source Image'){
                 container('swashikan'){
