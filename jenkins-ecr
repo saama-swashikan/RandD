@@ -41,7 +41,7 @@ lsblk
 ls /var/lib/containers/storage/vfs-images
 ls -lart
 pwd
-cd /var/lib/containers/storage/vfs-images
+cd /var/lib/containers/storage
 du -sh
 ls -lart
                                     """
