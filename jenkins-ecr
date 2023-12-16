@@ -11,7 +11,7 @@ podTemplate(
     )
   ],
   volumes: [
-    dynamicPVC(requestsSize : '500Gi', mountPath: '/var/lib/containers')
+    dynamicPVC(requestsSize : '500Gi', mountPath: '/home/node/data')
   ]
 ) 
 
@@ -31,12 +31,16 @@ podTemplate(
                                     sh """
 df -h
 lsblk
+
                                         aws ecr get-login-password --region ${Source_AWS_Region} | podman login --username AWS --password-stdin 791532114280.dkr.ecr.${Source_AWS_Region}.amazonaws.com
                                         podman pull 791532114280.dkr.ecr.${Source_AWS_Region}.amazonaws.com/${Source_Image_Tag}
                                         echo 791532114280.dkr.ecr.${Source_AWS_Region}.amazonaws.com/${Source_Image_Tag} >> images.txt
                                         unset AWS_ACCESS_KEY_ID
                                         unset AWS_SECRET_ACCESS_KEY
                                         cat images.txt
+cd /var/lib/containers/storage/overlay
+ls -lart
+cp -r /var/lib/containers/storage/overlay/* /home/node/data
 ls -lart
 pwd
                                     """
