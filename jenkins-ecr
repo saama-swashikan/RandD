@@ -32,7 +32,6 @@ podTemplate(
 
 df -h
 lsblk
-echo $XDG_RUNTIME_DIR
                                         aws ecr get-login-password --region ${Source_AWS_Region} | podman login --username AWS --password-stdin 791532114280.dkr.ecr.${Source_AWS_Region}.amazonaws.com
                                         podman pull 791532114280.dkr.ecr.${Source_AWS_Region}.amazonaws.com/${Source_Image_Tag}
                                         echo 791532114280.dkr.ecr.${Source_AWS_Region}.amazonaws.com/${Source_Image_Tag} >> images.txt
@@ -40,7 +39,6 @@ echo $XDG_RUNTIME_DIR
                                         unset AWS_SECRET_ACCESS_KEY
                                         cat images.txt
 ls /var/lib/containers/storage/vfs-images
-ls -lart
 ls -lart
 pwd
                                     """
