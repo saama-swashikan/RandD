@@ -194,7 +194,7 @@ podTemplate(
     }
 }
 pipeline {
-    agent none
+    agent any
     parameters {
         choice(
             name: 'SOURCE_AWS_ACCOUNT', 
