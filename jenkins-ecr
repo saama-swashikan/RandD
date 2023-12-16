@@ -212,7 +212,7 @@ pipeline {
             name: 'SOURCE_AWS_ACCOUNT', 
             choices:'ai-research-saama\nlsacone-dev\nsdq-sam\nsdq-preview', 
             description:'Select Source AWS Account',
-defaultValue: 'lsacone-dev'
+
         )
         
         string(
@@ -231,7 +231,7 @@ defaultValue: 'swashikan:vishnu',
             name: 'DESTINATION_AWS_ACCOUNT', 
             choices:'ai-research-saama\nlsacone-dev\nsdq-sam\nsdq-preview', 
             description:'Select Destination AWS Account',
-defaultValue: 'lsacone-dev'
+
         )
         
         string(
