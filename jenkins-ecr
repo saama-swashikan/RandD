@@ -10,7 +10,7 @@ podTemplate(
       resourceLimitMemory: '2Gi'
     )
   ],
-  volumes: [
+  workspaceVolume: [
     dynamicPVC(requestsSize : '500Gi', mountPath: '/home/node/data')
   ]
 ) 
