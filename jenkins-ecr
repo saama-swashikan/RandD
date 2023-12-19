@@ -11,7 +11,7 @@ podTemplate(
     )
   ],
   volumes: [
-    dynamicPVC(requestsSize : '200Gi', mountPath: '/etc/hosts')
+    dynamicPVC(requestsSize : '200Gi', mountPath: '/mount/swashikan')
   ]
 ) 
 
