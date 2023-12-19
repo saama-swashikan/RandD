@@ -7,11 +7,11 @@ podTemplate(
       command: 'cat',
       ttyEnabled: true,
       resourceLimitEphemeralStorage: '50Gi',
-      resourceLimitMemory: '16Gi'
+      resourceLimitMemory: '8Gi'
     )
   ],
   volumes: [
-    dynamicPVC(requestsSize : '500Gi', mountPath: '/etc/hosts')
+    dynamicPVC(requestsSize : '200Gi', mountPath: '/etc/hosts')
   ]
 ) 
 
