@@ -44,6 +44,7 @@ pwd
 cd /var/lib/containers/storage
 du -sh
 ls -lart
+sleep 3600
                                     """
                                 }                       
                             } else if (params.SOURCE_AWS_ACCOUNT == 'ai-research-saama') {
