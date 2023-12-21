@@ -41,12 +41,11 @@ pipeline {
     }
     stages{
         stage('Pull and Push'){
-            steps{
                 container('swashikan'){
-            steps {
-                build job: "SRE/RnD/swashikan/child", wait: true
-            }
-            }
+                    steps {
+                        build job: "SRE/RnD/swashikan/child", wait: true
+                    }
+                }
         }
     }       
 }
