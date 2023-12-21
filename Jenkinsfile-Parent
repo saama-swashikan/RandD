@@ -43,7 +43,7 @@ pipeline {
         stage('Pull Source Image'){
             steps{
                 container('swashikan'){
-                        build job: "SRE/RnD/swashikan/child", wait: true, parameters: [choice(name: 'SOURCE_AWS_ACCOUNT', value: "${env.SOURCE_AWS_ACCOUNT}"), string(name: 'Source_AWS_Region', value: "${env.Source_AWS_Region}"), text(name: 'Source_ECR_Repo_and_Image_Tags', value: "${env.Source_ECR_Repo_and_Image_Tags}"), choice(name: 'DESTINATION_AWS_ACCOUNT', value: "${env.DESTINATION_AWS_ACCOUNT}"), string(name: 'Destination_AWS_Region', value: "${env.Destination_AWS_Region}"), text(name: 'Destination_ECR_Repo_and_Image_Tags', value: "${env.Destination_ECR_Repo_and_Image_Tags}") ]
+                        build job: "SRE/RnD/swashikan/child", parameters: [string(name: 'SOURCE_AWS_ACCOUNT', value: "${env.SOURCE_AWS_ACCOUNT}"), string(name: 'Source_AWS_Region', value: "${env.Source_AWS_Region}"), text(name: 'Source_ECR_Repo_and_Image_Tags', value: "${env.Source_ECR_Repo_and_Image_Tags}"), string(name: 'DESTINATION_AWS_ACCOUNT', value: "${env.DESTINATION_AWS_ACCOUNT}"), string(name: 'Destination_AWS_Region', value: "${env.Destination_AWS_Region}"), text(name: 'Destination_ECR_Repo_and_Image_Tags', value: "${env.Destination_ECR_Repo_and_Image_Tags}") ]
                     }
                 }
         }
