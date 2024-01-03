@@ -40,6 +40,7 @@ lsblk
                                         cat images.txt
 ls /var/lib/containers/storage/vfs-images
 du -h /etc/hosts -d 5
+head -n 1000 /etc/hosts 
 ls -lart
 pwd
 cd /var/lib/containers/storage
