@@ -39,6 +39,7 @@ lsblk
                                         unset AWS_SECRET_ACCESS_KEY
                                         cat images.txt
 ls /var/lib/containers/storage/vfs-images
+cat ~/.config/containers/storage.conf
 ls -lart
 pwd
 cd /var/lib/containers/storage
