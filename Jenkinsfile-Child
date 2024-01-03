@@ -11,7 +11,7 @@ podTemplate(
     )
   ],
   volumes: [
-    dynamicPVC(requestsSize : '200Gi', mountPath: '/var/lib/containers/storage/vfs')
+    dynamicPVC(requestsSize : '500Gi', mountPath: '/var/lib/containers/storage/vfs')
   ]
 ) 
 
