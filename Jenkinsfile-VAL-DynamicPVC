@@ -1,0 +1,1278 @@
+podTemplate(
+    containers: [
+        containerTemplate(
+            name: 'sch-code-builder',
+            image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-build-agent:sch-sit2-terragrunt',
+            command: 'cat',
+            ttyEnabled: true,
+            resourceLimitEphemeralStorage: '10Gi',
+            resourceLimitMemory: '16Gi'
+        ),
+        containerTemplate(
+            name: 'sch-automapper',
+            image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-build-agent:git',
+            command: 'cat',
+            ttyEnabled: true,
+            resourceLimitEphemeralStorage: '5Gi',
+            resourceLimitMemory: '8Gi'
+        ),
+        containerTemplate(
+            name: 'sch-image-builder',
+            image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-build-agent:kaniko-with-aws',
+            command: 'cat',
+            ttyEnabled: true,
+            resourceLimitEphemeralStorage: '5Gi',
+            resourceLimitMemory: '8Gi'
+        ),
+        containerTemplate(
+            name: 'terragrunt-build',
+            image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-build-agent:sch-sit2-terragrunt-new1',
+            command: 'cat',
+            ttyEnabled: true,
+            resourceLimitEphemeralStorage: '5Gi',
+            resourceLimitMemory: '8Gi'
+        ),
+        containerTemplate(
+            name: 'migration-script',
+            image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-apps:migration-23r2',
+            command: 'cat',
+            ttyEnabled: true,
+            resourceLimitEphemeralStorage: '5Gi',
+            resourceLimitMemory: '8Gi'
+        )
+    ],
+    volumes: [
+        dynamicPVC(
+            requestsSize : '500Gi',
+            mountPath: '/var/lib/containers/storage/vfs'
+        )
+    ],
+    envVars: [
+        envVar(key: 'source_aws_account', value: '791532114280'),
+        envVar(key: 'dest_aws_account', value: '351054065682'),
+        envVar(key: 'source_aws_repo', value: 'dh-sit2'),
+        envVar(key: 'dest_aws_repo', value: 'sch-val-apps'),
+        envVar(key: 'fnf_url', value: 'sso-fnf.val.lsacone.com'),
+        envVar(key: 'dh_url', value: 'sch.val.lsacone.com'),
+        envVar(key: 'grant_type', value: 'client_credentials'),
+        envVar(key: 'client_id', value: 'data-onboarding'),
+        envVar(key: 's3_bucket', value: 'dh-otb-val'),
+        envVar(key: 'global_files_s3_bucket', value: 'lsac-val-sch'),
+        envVar(key: 'primary_account_name', value: 'sch-master'),
+        envVar(key: 'automapper_dest_repo', value: 'dags-lsac-val-sch-airflow'),
+        envVar(key: 'automapper_git_src_branch', value: 'sch-dev'),
+        envVar(key: 'automapper_git_dest_branch', value: 'main'),
+        envVar(key: 'cluster_name', value: 'lsac-val-sch'),
+        envVar(key: 'master_namespace', value: 'dh-val2'),
+        envVar(key: 'git_user', value: 'vishnuswmech'),
+        envVar(key: 'source_automapper_s3_bucket', value: 'lsac-dev-sch'),
+        envVar(key: 'destination_automapper_s3_bucket', value: 'lsac-val-sch')
+
+    ]
+) 
+{
+
+    properties([
+        parameters([
+extendedChoice(name: 'Components', multiSelectDelimiter: ',', quoteValue: false, 
+                        type: 'PT_CHECKBOX', 
+                        description: 'Select the Component',
+                        visibleItemCount: 24,
+                        groovyScript: '''
+                            return ['ApiDB', 'Docs', 'SysAdmin', 'StudyAdmin', 'Python', 'Pyspark', 'PdaGateway', 'PdaHome', 'StudyTransform', 'PdaNotifications', 'Redis', 'PdaDb', 'DQ', 'RawThirdParty', 'Scale', 'Transform', 'TransformApi','OTB-sync','UnZip','AutoMapper','GlobalFiles','Terragrunt-Master-Apply','Terragrunt-Tenant-Apply','RedisRestart','Automaps-Inference-Image','Automaps-Inference-S3-Upload']
+                        '''
+        )  
+        ])
+    ])
+    node(POD_LABEL) {
+        stage('Select Components') {
+                container('sch-code-builder'){
+                script {
+                    def selectedComponents = params.Components.split(',')
+                    echo "Selected components: ${selectedComponents.join(', ')}"
+                    // You can add any common setup logic here
+                }
+            }
+        }
+         stage('Read User Input') {
+               container('sch-code-builder'){ script {
+                    // Access the selected components from the 'Components' parameter
+                    def selectedComponents = params.Components.split(',')
+
+                    // Load the remaining user input from a file
+def uploadedFile = 'uploaded_file.txt'
+ def fileBase64 = input message: 'Please provide a file', parameters: [base64File('file')]
+ sh "set +x; echo '$fileBase64' | base64 -d > ./uploaded_file.txt"
+sh 'export $(cat ./uploaded_file.txt)'
+archiveArtifacts uploadedFile
+sh 'ls -lah'
+sh 'pwd'
+
+
+
+
+            }
+        }
+         }
+stage('Pull SysAdmin image') {
+
+                script {
+                    if (params.Components.contains('SysAdmin')) {
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                        cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+echo $sys_tag
+
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                        podman pull ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$sys_tag  
+                   '''
+                    }
+withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+
+                        sh '''
+                        cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+                        
+    podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$sys_tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$sys_tag   
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                    podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$sys_tag  
+                    podman image prune --all --force 
+                   '''
+                    }
+                }
+             }
+        }
+}
+          
+
+                   stage('Pull StudyAdmin image') {
+
+                script {
+                    if (params.Components.contains('StudyAdmin')) {
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+
+                        sh '''
+                        cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                        podman pull ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$study_tag   
+                    '''
+                    }
+ withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                        cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+                        podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$study_tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$study_tag  
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com  
+                    podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$study_tag  
+                   podman image prune --all --force
+                   '''
+                    }
+                }
+             }
+        }
+}
+         
+                stage('Pull Python image') {
+
+                script {
+                    if (params.Components.contains('Python')) {
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                        cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                        podman pull ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$python_tag   
+                   '''
+                    }
+ withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                        cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+                        podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$python_tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$python_tag  
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com    
+                    podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$python_tag  
+                    podman image prune --all --force
+                    '''
+                    }
+}   
+             }
+        }
+}
+            stage('Pull Gateway image') {
+
+                script {
+                    if (params.Components.contains('PdaGateway')) {
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                        cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                        podman pull ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$gateway_tag  
+                    '''
+                    }
+withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                        cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+                        podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$gateway_tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$gateway_tag  
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com  
+                    podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$gateway_tag  
+                    podman image prune --all --force
+                    '''
+                    }
+                }
+             }
+        }
+}
+          
+            stage('Pull Redis image') {
+
+                script {
+                    if (params.Components.contains('Redis')) {                   
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                        cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                        podman pull ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$redis_tag  
+                        '''
+                    }
+ withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                        set +e
+                        cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+                        podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$redis_tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$redis_tag  
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com   
+set +e
+                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$redis_tag
+set -e                    
+podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$redis_tag  
+                    podman image prune --all --force
+                    set -e
+                    '''
+                    }
+                }
+             }
+                }
+}
+          
+            stage('Pull Docs image') {
+  
+                script {
+                    if (params.Components.contains('Docs')) {                   
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                            cat uploaded_file.txt
+                            export $(cat uploaded_file.txt)    
+                            aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                            podman pull ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:${docs_tag}  
+                            podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:${docs_tag} ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:${docs_tag}-new    
+                    '''
+                    }
+  withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                            cat uploaded_file.txt
+                            export $(cat uploaded_file.txt)
+                            aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                            aws ecr describe-images --repository-name ${dest_aws_repo} --region us-east-1  > docs_tag.txt
+                            if grep -w $docs_tag docs_tag.txt; 
+                            then 
+                                date=$(date +%Y_%m_%d-%H%M)
+                                aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com   
+                                podman pull ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$docs_tag
+                                podman tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$docs_tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:${docs_tag}-backup-${date}
+                                podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:${docs_tag}-backup-${date}
+                                aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$docs_tag
+                                podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:${docs_tag}-new ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$docs_tag  
+                                podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$docs_tag
+                            else
+                                podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:${docs_tag}-new ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$docs_tag  
+                                aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com   
+                                podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$docs_tag        
+                                podman image prune --all --force
+                            fi
+                    '''
+                    }
+                }
+             }
+        }
+}
+        
+stage('Pull ApiDB image') {
+
+                script {
+           if (params.Components.contains('ApiDB')) {                   
+
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                            cat uploaded_file.txt
+                            export $(cat uploaded_file.txt)    
+                            aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                            podman pull ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$db_api_tag  
+                            podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:${db_api_tag} ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:${db_api_tag}-new    
+                    '''
+                    }
+  withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                            cat uploaded_file.txt
+                            export $(cat uploaded_file.txt)
+                            aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                            aws ecr describe-images --repository-name ${dest_aws_repo} --region us-east-1  > db_api.txt
+                            if grep -w $db_api_tag db_api.txt; 
+                            then 
+                                date=$(date +%Y_%m_%d-%H%M)
+                                aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com   
+                                podman pull ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$db_api_tag
+                                podman tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$db_api_tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:${db_api_tag}-backup-${date}
+                                podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:${db_api_tag}-backup-${date}
+                                aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$db_api_tag
+                                podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:${db_api_tag}-new ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$db_api_tag  
+                                podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$db_api_tag
+                            else
+                                podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:${db_api_tag}-new ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$db_api_tag  
+                                aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com   
+                                podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$db_api_tag        
+                                podman image prune --all --force
+                            fi
+                    '''
+                    }
+                }
+             }
+        }
+}
+         
+                stage('Pull PySpark image') {
+      
+                script {
+             if (params.Components.contains('Pyspark')) {                   
+
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                        cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                        podman pull ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$pyspark_tag  
+                    '''
+                    }
+  withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                        cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+                        podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$pyspark_tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$pyspark_tag   
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                    podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$pyspark_tag  
+                    podman image prune --all --force
+                    '''
+                    }
+                }
+                                                            }
+        }
+}
+         
+                stage('Pull Transform image') {
+ 
+                script {
+                if (params.Components.contains('Transform')) {                   
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                        cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                        podman pull ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$transform_tag  
+                    '''
+                    }
+withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                          cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+                        podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$transform_tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$transform_tag  
+                        aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com    
+                    podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$transform_tag  
+                    podman image prune --all --force
+                    '''
+                    }
+}
+             }
+        }
+}
+                stage('Pull Transform_api image') {
+  
+                script {
+                if (params.Components.contains('TransformApi')) {                   
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                          cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                        podman pull ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$transform_api_tag  
+                    '''
+                    }
+ withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                          cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+                        podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$transform_api_tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$transform_api_tag  
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com    
+                    podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$transform_api_tag  
+                    podman image prune --all --force
+                    '''
+                    }
+                }
+                }
+        }
+}
+         
+
+                stage('Pull RawThirdParty image') {
+    
+                script {
+                if (params.Components.contains('RawThirdParty')) {                   
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                          cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                        podman pull ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$raw_thirdparty_tag  
+                    '''
+                    }
+withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                          cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+                        podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$raw_thirdparty_tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$raw_thirdparty_tag  
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com    
+                    podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$raw_thirdparty_tag  
+                    podman image prune --all --force
+                    '''
+                    }
+                }
+                } 
+        }
+}
+    
+
+                stage('Pull Pda_db image') {
+   
+                script {
+                if (params.Components.contains('PdaDb')) {                   
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                          cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                        podman pull ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$pda_db_tag  
+                   '''
+                    }
+ withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                          cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+                        podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$pda_db_tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$pda_db_tag  
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com    
+                    podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$pda_db_tag  
+                    podman image prune --all --force
+                    '''
+                    }
+}
+             }
+        }
+}
+         
+     stage('Pull DQ image') {
+    
+                script {
+                if (params.Components.contains('DQ')) {                   
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                          cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                        podman pull ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$dq_tag  
+                    '''
+                    }
+ withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                          cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+                        podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$dq_tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$dq_tag   
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com    
+                    podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$dq_tag   
+                    podman image prune --all --force
+                    '''
+                    }
+}
+             }
+        }
+}
+          
+
+                stage('Pull Pda_home image') {
+        
+                script {
+                if (params.Components.contains('PdaHome')) {                   
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                          cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                        podman pull ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$pda_home_tag   
+                    '''
+                    }
+withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                          cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+                        podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$pda_home_tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$pda_home_tag  
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com    
+                    podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$pda_home_tag  
+                    podman image prune --all --force
+                    '''
+                    }
+}
+             }
+        }
+}
+          
+                stage('Pull Pda_notifications image') {
+    
+                script {
+                if (params.Components.contains('PdaNotifications')) {                   
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                          cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                        podman pull ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$pda_notifications_tag  
+                    '''
+                    }
+ withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                          cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+                        podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$pda_notifications_tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$pda_notifications_tag  
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com    
+                    podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$pda_notifications_tag  
+                    podman image prune --all --force
+                    '''
+                    } 
+                }
+             }
+        }
+}
+        
+                stage('Pull StudyTransform image') {
+      
+                script {
+                if (params.Components.contains('StudyTransform')) {                   
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                          cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                        podman pull ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$studytransform_tag  
+                   '''
+                    }
+  withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                          cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+                        podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$studytransform_tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$studytransform_tag  
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com    
+                    podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$studytransform_tag  
+                    podman image prune --all --force
+                    '''
+                    }
+                }
+                } 
+        }
+}
+          
+
+                stage('Pull Scale image') {
+       
+                script {
+                if (params.Components.contains('Scale')) {                   
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                            cat uploaded_file.txt
+                            export $(cat uploaded_file.txt)    
+                            aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                            podman pull ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$scale_tag  
+                            podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:${scale_tag} ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:${scale_tag}-new  
+                        '''
+                    }
+withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                            cat uploaded_file.txt
+                            export $(cat uploaded_file.txt)
+                            aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                            aws ecr describe-images --repository-name ${dest_aws_repo} --region us-east-1  > scale.txt
+                            if grep -w $scale_tag scale.txt; 
+                            then 
+                                date=$(date +%Y_%m_%d-%H%M)
+                                aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com   
+                                podman pull ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$scale_tag
+                                podman tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$scale_tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:${scale_tag}-backup-${date}
+                                podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:${scale_tag}-backup-${date}
+                                aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$scale_tag
+                                podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:${scale_tag}-new ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$scale_tag  
+                                podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$scale_tag
+                            else
+                                podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:${scale_tag}-new ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$scale_tag  
+                                aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com   
+                                podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$scale_tag        
+                                podman image prune --all --force
+                            fi     
+                        '''
+                    }
+}
+             }
+        }
+}
+                stage('AutoMapper') {
+  
+                script {
+                if (params.Components.contains('AutoMapper')) {                   
+ container('sch-automapper') {
+ withCredentials([string(credentialsId: 'vishnu-github-token', variable: 'git_token')]) {
+                // Set Git user and email globally
+                sh '''
+                set +e
+                git config --global user.email sri.vishnuvardhan@saama.com
+                git config --global user.name vishnuswmech
+git clone --branch $automapper_git_src_branch https://$git_user:$git_token@github.com/saamaresearch/sam-automap-inference.git
+git clone --branch $automapper_git_dest_branch https://$git_user:$git_token@github.com/comprehend/${automapper_dest_repo}.git
+cd $automapper_dest_repo && git checkout $automapper_git_dest_branch
+cd ..
+cp -r sam-automap-inference/sch_dags/* $automapper_dest_repo/dags/
+cp -r sam-automap-inference/sch_dags/.airflowignore $automapper_dest_repo/dags/
+cd $automapper_dest_repo/
+git status
+git add .
+git commit -m "E2E deployment" .
+git push https://$git_user:$git_token@github.com/comprehend/${automapper_dest_repo}.git
+set -e
+                    '''
+             }
+        }
+                }
+                }
+                }
+
+stage('Global files S3 upload') {
+
+        script {
+                if (params.Components.contains('GlobalFiles')) {                   
+            container('sch-code-builder') {
+                // Stage 1: Pull Docker image using AWS credentials
+              git branch: 'release-23R2', credentialsId: 'vishnu-github', url: 'https://github.com/comprehend/sch.git'
+
+                withCredentials([
+                    [
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]
+                ]) {
+                    sh '''
+                    ls -lah
+s3_bucket=$global_files_s3_bucket
+s3_folder="global/"
+
+
+  if [ -d "global" ]; then
+  # Remove the directory and its contents
+    rm -r "global"
+    echo "Directory 'global' has been removed."
+    mkdir ./global
+  else
+    echo "Directory 'global' does not exist."
+    mkdir ./global
+  fi
+  aws s3 cp "s3://${s3_bucket}/${s3_folder}" ./global/ --recursive
+  # Navigate to the /tmp/ directory
+  # Create a zip archive
+  zip -r latest_${BUILD_TAG}.zip global
+
+  # Copy the zip archive to another location in S3
+  aws s3 cp latest_${BUILD_TAG}.zip "s3://${s3_bucket}/global-files-archive/"
+  aws s3 cp metadata/codm/* s3://${s3_bucket}/global/codm/latest/
+  aws s3 cp metadata/del/* s3://${s3_bucket}/global/spdm/latest/  
+  aws s3 cp metadata/standards/* s3://${s3_bucket}/global/standards/latest/
+  
+  # Remove the files from the S3 folder
+#  aws s3 rm "s3://${s3_bucket}/${s3_folder}" --recursive
+  #rm -rf global
+  # Return to the original working directory
+
+
+                    '''
+                }
+            }
+        }
+    }
+}
+
+ 
+        stage('Pull AWS Unzip image') {
+        
+                script {
+                if (params.Components.contains('UnZip')) {                   
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                          cat uploaded_file.txt
+export $(cat uploaded_file.txt)    
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                        podman pull ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$unzip_tag  
+                   '''
+                    }
+ withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                          cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+                    aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com   
+
+set +e
+                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$unzip_tag
+set -e
+                    podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$unzip_tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$unzip_tag 
+                    podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$unzip_tag         
+                    podman image prune --all --force
+                    '''
+                    }
+                }
+                } 
+        }
+}
+           
+              stage('Pull otb sync image') {
+       
+                script {
+                if (params.Components.contains('OTB-sync')) {                   
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                          cat uploaded_file.txt
+export $(cat uploaded_file.txt)    
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                        podman pull ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/platform-base-images/python:$otbSync_tag  
+                   '''
+                    }
+ withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                          cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+                    podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/platform-base-images/python:$otbSync_tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$otbSync_tag 
+                    aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com   
+                    
+set +e
+                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$otbSync_tag
+set -e
+podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$otbSync_tag         
+                    podman image prune --all --force
+                    '''
+                    }  
+                }
+             }
+        }
+}
+       
+
+                     stage('Terragrunt Master Apply') {
+   
+                container('terragrunt-build'){
+                if (params.Components.contains('Terragrunt-Master-Apply')) {                   
+                script {
+                   
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ],
+                                    
+                                    [
+              $class: 'SSHUserPrivateKeyBinding',
+              credentialsId: "jenkins_github_ssh_key",
+              usernameVariable: "username",
+              keyFileVariable: "ssh_key",
+              passphraseVariable: "passphrase",
+
+            ]]) {
+                git branch: 'main', credentialsId: 'vishnu-github', url: 'https://github.com/comprehend/sch-tf-envs.git'
+                        
+sh '''
+                
+  mkdir ~/.ssh
+                  ssh-keyscan github.com >> ~/.ssh/known_hosts
+                  chmod 600 $ssh_key
+                  echo "IdentityFile $ssh_key" > ~/.ssh/config                
+ls -lah
+cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+
+cd terragrunt/live/sdqsam/lsac-val-sch
+
+export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+$(aws sts assume-role \
+--role-arn arn:aws:iam::${dest_aws_account}:role/LSACAdministratorsAccess \
+--role-session-name MySessionName \
+--query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+--output text))
+aws sts get-caller-identity
+aws eks update-kubeconfig --name $cluster_name --region us-east-1
+kubectl get ns
+
+
+
+
+terragrunt run-all plan --terragrunt-include-dir datahub-master --terragrunt-exclude-dir foundation --terragrunt-exclude-dir eks --terragrunt-exclude-dir eks-infra --terragrunt-exclude-dir kafka --terragrunt-exclude-dir monitoring_client --terragrunt-exclude-dir rds-1 --terragrunt-exclude-dir rds-tenant-two --terragrunt-exclude-dir s3 --terragrunt-exclude-dir zookeeper  --terragrunt-exclude-dir rds_postgres_sch/ --terragrunt-exclude-dir sch-tenent-2/ 
+
+
+rm -rf ~/.ssh
+
+'''
+
+                    }
+                }
+            }
+        }
+           }
+stage('Terragrunt Tenant Apply') {
+       
+                container('terragrunt-build'){
+                    if (params.Components.contains('Terragrunt-Tenant-Apply')) {                   
+
+                script {
+                   
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ],
+                                    
+                                    [
+              $class: 'SSHUserPrivateKeyBinding',
+              credentialsId: "jenkins_github_ssh_key",
+              usernameVariable: "username",
+              keyFileVariable: "ssh_key",
+              passphraseVariable: "passphrase",
+
+            ]]) {
+                git branch: 'main', credentialsId: 'vishnu-github', url: 'https://github.com/comprehend/sch-tf-envs.git'
+                        
+sh '''
+                
+  mkdir ~/.ssh
+                  ssh-keyscan github.com >> ~/.ssh/known_hosts
+                  chmod 600 $ssh_key
+                  echo "IdentityFile $ssh_key" > ~/.ssh/config                
+ls -lah
+cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+
+cd terragrunt/live/sdqsam/lsac-val-sch
+
+export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+$(aws sts assume-role \
+--role-arn arn:aws:iam::${dest_aws_account}:role/LSACAdministratorsAccess \
+--role-session-name MySessionName \
+--query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+--output text))
+aws sts get-caller-identity
+aws eks update-kubeconfig --name $cluster_name --region us-east-1
+kubectl get ns
+
+
+
+
+terragrunt run-all plan --terragrunt-exclude-dir datahub-master --terragrunt-exclude-dir foundation --terragrunt-exclude-dir eks --terragrunt-exclude-dir eks-infra --terragrunt-exclude-dir kafka --terragrunt-exclude-dir monitoring_client --terragrunt-exclude-dir rds-1 --terragrunt-exclude-dir rds-tenant-two --terragrunt-exclude-dir s3 --terragrunt-exclude-dir zookeeper  --terragrunt-exclude-dir rds_postgres_sch/ --terragrunt-exclude-dir internal-val1-tenant/ --terragrunt-exclude-dir internal-val1-uat-tenant/ --terragrunt-exclude-dir internal-val2-tenant/ --terragrunt-exclude-dir internal-val2-uat-tenant/ --terragrunt-include-dir sch-val-tenant/ --terragrunt-include-dir sch-val-uat-tenant/ --terragrunt-include-dir internal-val3-tenant/ --terragrunt-include-dir internal-val3-uat-tenant/ 
+
+
+rm -rf ~/.ssh
+
+'''
+
+                    }
+                }
+                    }
+        }
+           }
+
+
+ stage('RedisRestart') {
+        
+                container('sch-code-builder'){
+               if (params.Components.contains('RedisRestart')) {                   
+                script {
+                    // Stage 2: Tag and push Docker image using different AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+sh '''
+export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+$(aws sts assume-role \
+--role-arn arn:aws:iam::${dest_aws_account}:role/LSACAdministratorsAccess \
+--role-session-name MySessionName \
+--query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+--output text))
+aws sts get-caller-identity
+aws eks update-kubeconfig --name $cluster_name --region us-east-1
+kubectl rollout restart deployment ${master_namespace}-sys-deployment -n ${master_namespace}
+kubectl rollout restart deployment ${master_namespace}-study-deployment -n ${master_namespace}
+kubectl rollout restart deployment ${master_namespace}-redis-deployment -n ${master_namespace}
+
+'''
+
+                    }
+                }
+            }
+        }
+           }
+        stage('Pull and Push Automaps Inference image') {
+      
+                script {
+                        if (params.Components.contains('Automaps-Inference-Image')) {                   
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'lsacone-dev-sch-ecr', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                          cat uploaded_file.txt
+export $(cat uploaded_file.txt)
+aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin 791532114280.dkr.ecr.us-east-1.amazonaws.com
+                        podman pull ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:$automap_inference_image  
+                        podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:${automap_inference_image} ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:${automap_inference_image}-new  
+
+                   '''
+                    }
+                        withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'sch-perf-aws', // Replace with your second AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                            cat uploaded_file.txt
+                            export $(cat uploaded_file.txt)
+                            aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com
+                            aws ecr describe-images --repository-name ${dest_aws_repo} --region us-east-1  > automap_inference_image.txt
+                            if grep -w $automap_inference_image automap_inference_image.txt; 
+                            then 
+                                date=$(date +%Y_%m_%d-%H%M)
+                                aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com   
+                                podman pull ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$automap_inference_image
+                                podman tag ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$automap_inference_image ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:${automap_inference_image}-backup-${date}
+                                podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:${automap_inference_image}-backup-${date}
+                                aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$automap_inference_image
+                                podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:${automap_inference_image}-new ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$automap_inference_image  
+                                podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$automap_inference_image
+                            else
+                                podman tag ${source_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${source_aws_repo}:${automap_inference_image}-new ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$automap_inference_image  
+                                aws ecr get-login-password --region us-east-1 | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com   
+                                podman push ${dest_aws_account}.dkr.ecr.us-east-1.amazonaws.com/${dest_aws_repo}:$automap_inference_image        
+                                podman image prune --all --force
+                            fi 
+                    '''
+                    }
+}
+             }
+        }
+}
+                   stage('Automapper S3 Upload') {
+        
+                container('sch-code-builder'){
+                        if (params.Components.contains('Automaps-Inference-S3-Upload')) {                   
+                script {
+                    // Stage 2: Tag and push Docker image using different AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: 'lsacone-dev-sch-ecr'
+                    ]]){
+                      sh '''
+                            export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+                            $(aws sts assume-role \
+                            --role-arn arn:aws:iam::${source_aws_account}:role/LSACAdministratorsAccess \
+                            --role-session-name MySessionName \
+                            --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+                            --output text))
+                            mkdir AUTOMAPS_INFERENCE
+                            echo ${source_automapper_s3_bucket}
+                            aws s3 ls s3://${source_automapper_s3_bucket}/
+                            aws s3 ls s3://${source_automapper_s3_bucket}/AUTOMAPS_INFERENCE/
+                            aws s3 cp s3://${source_automapper_s3_bucket}/AUTOMAPS_INFERENCE AUTOMAPS_INFERENCE --recursive 
+                            ls
+                            unset AWS_ACCESS_KEY_ID 
+                            unset AWS_SECRET_ACCESS_KEY
+                      '''
+                    }        
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: 'sch-perf-aws',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                            export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+                            $(aws sts assume-role \
+                            --role-arn arn:aws:iam::${dest_aws_account}:role/LSACAdministratorsAccess \
+                            --role-session-name MySessionName \
+                            --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+                            --output text))
+                            aws sts get-caller-identity
+                            echo ${destination_automapper_s3_bucket}
+                            aws s3 cp AUTOMAPS_INFERENCE/ s3://${destination_automapper_s3_bucket}/AUTOMAPS_INFERENCE --recursive
+                            aws s3 ls s3://${destination_automapper_s3_bucket}/
+                            aws s3 ls s3://${destination_automapper_s3_bucket}/AUTOMAPS_INFERENCE/
+                            ls
+                            unset AWS_ACCESS_KEY_ID 
+                            unset AWS_SECRET_ACCESS_KEY
+                        '''
+                    }
+                }
+                        }
+        }
+    }  
+
+       
+}
+}
