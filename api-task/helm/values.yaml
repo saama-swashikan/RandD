@@ -1,0 +1,17 @@
+name: dh-mkdocs
+
+namespaces:
+  application: vishnu-poc
+
+docs:
+  service:
+    type: NodePort
+  image: 791532114280.dkr.ecr.us-east-1.amazonaws.com/dh-dev3
+  tag: dh-docs-jenkins-SCH-DH-docs-25
+
+airflow_username:
+airflow_password:
+
+ingress:
+  enabled: true
+  hostname: vishnu-poc.dev.lsacone.com 

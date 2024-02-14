@@ -1,0 +1,42 @@
+{{ if .Values.ingress.enabled}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dh-docs-ingress
+  namespace: {{ .Values.namespaces.application }}
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/affinity: cookie
+    nginx.ingress.kubernetes.io/client-body-buffer-size: 200M
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/forwarded-for-header: X-Original-Forwarded-For
+    nginx.ingress.kubernetes.io/proxy-add-original-uri-header: "false"
+    nginx.ingress.kubernetes.io/proxy-body-size: 20M
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 200M
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: '900'
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '900'
+    nginx.ingress.kubernetes.io/proxy-send-timeout: '900'
+    nginx.ingress.kubernetes.io/session-cookie-name: TGC
+    nginx.ingress.kubernetes.io/upstream-fail-timeout: "900"
+    nginx.ingress.kubernetes.io/keep-alive: "90"
+    nginx.ingress.kubernetes.io/upstream-vhost: $host
+    nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
+spec:
+  rules:
+  - host: {{ .Values.ingress.hostname }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: dh-docs-service
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+{{ if .Values.ingress.enable_tls }}
+  tls:
+  - hosts:
+    - {{ .Values.ingress.hostname }}
+  - secretName: {{ .Values.ingress.cert }}
+{{ end }}
+{{ end }}

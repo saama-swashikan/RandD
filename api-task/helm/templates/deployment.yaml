@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dh-docs-deployment
+  namespace: {{ .Values.namespaces.application }}
+  labels:
+    name: dh-docs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: dh-docs
+  template:
+    metadata:
+      labels:
+        name: dh-docs
+    spec:
+      containers:
+      - name: dh-docs
+        image: {{ .Values.docs.image }}:{{ .Values.docs.tag }}
+        imagePullPolicy: Always
+{{ if .Values.imagePullSecrets }}
+      imagePullSecrets:
+      - name: {{ .Values.imagePullSecrets }}
+{{ end }}

@@ -1,0 +1,1086 @@
+{
+    "swagger": "2.0",
+    "info": {
+      "description": "Api Documentation",
+      "version": "1.0",
+      "title": "Api Documentation",
+      "termsOfService": "urn:tos",
+      "contact": {},
+      "license": {
+        "name": "Apache 2.0",
+        "url": "http://www.apache.org/licenses/LICENSE-2.0"
+      }
+    },
+    "host": "sch.dev2.lsacone.com",
+    "basePath": "/pda-db",
+    "tags": [
+      {
+        "name": "Data Browser Operations REST Endpoints",
+        "description": "Data Browser Operations API for PDA"
+      },
+      {
+        "name": "Data Browser Patient REST Endpoints",
+        "description": "Data Browser API for PDA"
+      }
+    ],
+    "paths": {
+      "/api/v1/db/codelist": {
+        "get": {
+          "tags": [
+            "Data Browser Patient REST Endpoints"
+          ],
+          "summary": "Fetches Codelist complete info for studyID",
+          "operationId": "fetchCodeListInfoUsingGET",
+          "produces": [
+            "application/json"
+          ],
+          "parameters": [
+            {
+              "name": "codeListName",
+              "in": "query",
+              "description": "codeListName",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "studyId",
+              "in": "query",
+              "description": "studyId",
+              "required": true,
+              "type": "string"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/Map«string,object»"
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden"
+            },
+            "404": {
+              "description": "Not Found"
+            }
+          },
+          "deprecated": false
+        }
+      },
+      "/api/v1/db/dataset/details": {
+        "put": {
+          "tags": [
+            "Data Browser Patient REST Endpoints"
+          ],
+          "summary": "Gets details of the given dataset",
+          "operationId": "getDatasetDetailsUsingPUT",
+          "consumes": [
+            "application/json"
+          ],
+          "produces": [
+            "application/json"
+          ],
+          "parameters": [
+            {
+              "name": "dataset",
+              "in": "query",
+              "description": "dataset",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "in": "body",
+              "name": "filters",
+              "description": "Data is filtered over only on this advance query field",
+              "required": false,
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/FilterDto"
+                }
+              }
+            },
+            {
+              "name": "layer",
+              "in": "query",
+              "description": "layer",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "offset",
+              "in": "query",
+              "description": "offset",
+              "required": false,
+              "type": "integer",
+              "format": "int32"
+            },
+            {
+              "name": "sourceType",
+              "in": "query",
+              "description": "sourceType",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "studyId",
+              "in": "query",
+              "description": "studyId",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "vendor",
+              "in": "query",
+              "description": "Vendor Name",
+              "required": true,
+              "type": "string"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "schema": {
+                "$ref": "#/definitions/ApiResponse«object»"
+              }
+            },
+            "201": {
+              "description": "Created"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden"
+            },
+            "404": {
+              "description": "Not Found"
+            }
+          },
+          "deprecated": false
+        }
+      },
+      "/api/v1/db/dataset/details/download": {
+        "put": {
+          "tags": [
+            "Data Browser Patient REST Endpoints"
+          ],
+          "summary": "Downloads dataset details",
+          "operationId": "downloadDatasetDetailsUsingPUT",
+          "produces": [
+            "application/octet-stream"
+          ],
+          "parameters": [
+            {
+              "name": "dataset",
+              "in": "query",
+              "description": "dataset",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "layer",
+              "in": "query",
+              "description": "layer",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "sourceType",
+              "in": "query",
+              "description": "sourceType",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "studyId",
+              "in": "query",
+              "description": "studyId",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "vendor",
+              "in": "query",
+              "description": "Vendor Name",
+              "required": true,
+              "type": "string"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "schema": {
+                "type": "object"
+              }
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden"
+            },
+            "404": {
+              "description": "Not Found"
+            }
+          },
+          "deprecated": false
+        }
+      },
+      "/api/v1/db/dataset/details/ops": {
+        "put": {
+          "tags": [
+            "Data Browser Operations REST Endpoints"
+          ],
+          "summary": "Gets details of the given dataset for Operations",
+          "operationId": "getDatasetDetailsUsingPUT_1",
+          "consumes": [
+            "application/json"
+          ],
+          "produces": [
+            "application/json"
+          ],
+          "parameters": [
+            {
+              "name": "dataset",
+              "in": "query",
+              "description": "dataset",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "in": "body",
+              "name": "filters",
+              "description": "Data is filtered over only on this advance query field",
+              "required": false,
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/FilterDto"
+                }
+              }
+            },
+            {
+              "name": "layer",
+              "in": "query",
+              "description": "layer",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "offset",
+              "in": "query",
+              "description": "offset",
+              "required": false,
+              "type": "integer",
+              "format": "int32"
+            },
+            {
+              "name": "sourceType",
+              "in": "query",
+              "description": "sourceType",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "vendor",
+              "in": "query",
+              "description": "vendor",
+              "required": false,
+              "type": "string"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "schema": {
+                "$ref": "#/definitions/ApiResponse«object»"
+              }
+            },
+            "201": {
+              "description": "Created"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden"
+            },
+            "404": {
+              "description": "Not Found"
+            }
+          },
+          "deprecated": false
+        }
+      },
+      "/api/v1/db/dataset/metadata": {
+        "get": {
+          "tags": [
+            "Data Browser Patient REST Endpoints"
+          ],
+          "summary": "Fetches the metadata of given dataset",
+          "operationId": "getDatasetMetadataUsingGET",
+          "produces": [
+            "application/json"
+          ],
+          "parameters": [
+            {
+              "name": "dataset",
+              "in": "query",
+              "description": "dataset",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "layer",
+              "in": "query",
+              "description": "layer",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "sourceType",
+              "in": "query",
+              "description": "sourceType",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "studyId",
+              "in": "query",
+              "description": "studyId",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "vendor",
+              "in": "query",
+              "description": "vendor",
+              "required": false,
+              "type": "string"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "schema": {
+                "$ref": "#/definitions/ApiResponse«object»"
+              }
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden"
+            },
+            "404": {
+              "description": "Not Found"
+            }
+          },
+          "deprecated": false
+        }
+      },
+      "/api/v1/db/dataset/metadata/download": {
+        "get": {
+          "tags": [
+            "Data Browser Patient REST Endpoints"
+          ],
+          "summary": "Downloads the metadata of a given dataset",
+          "operationId": "downloadDatasetMetadataUsingGET",
+          "produces": [
+            "application/json"
+          ],
+          "parameters": [
+            {
+              "name": "dataset",
+              "in": "query",
+              "description": "dataset",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "layer",
+              "in": "query",
+              "description": "layer",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "sourceType",
+              "in": "query",
+              "description": "sourceType",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "studyId",
+              "in": "query",
+              "description": "studyId",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "vendor",
+              "in": "query",
+              "description": "Vendor Name",
+              "required": true,
+              "type": "string"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "schema": {
+                "$ref": "#/definitions/ByteArrayResource"
+              }
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden"
+            },
+            "404": {
+              "description": "Not Found"
+            }
+          },
+          "deprecated": false
+        }
+      },
+      "/api/v1/db/dataset/metadata/download/ops": {
+        "get": {
+          "tags": [
+            "Data Browser Operations REST Endpoints"
+          ],
+          "summary": "Downloads the metadata of a given dataset for Operations",
+          "operationId": "downloadDatasetMetadataUsingGET_1",
+          "produces": [
+            "application/json"
+          ],
+          "parameters": [
+            {
+              "name": "dataset",
+              "in": "query",
+              "description": "dataset",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "layer",
+              "in": "query",
+              "description": "layer",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "sourceType",
+              "in": "query",
+              "description": "sourceType",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "vendor",
+              "in": "query",
+              "description": "vendor",
+              "required": false,
+              "type": "string"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "schema": {
+                "$ref": "#/definitions/ByteArrayResource"
+              }
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden"
+            },
+            "404": {
+              "description": "Not Found"
+            }
+          },
+          "deprecated": false
+        }
+      },
+      "/api/v1/db/dataset/metadata/ops": {
+        "get": {
+          "tags": [
+            "Data Browser Operations REST Endpoints"
+          ],
+          "summary": "Fetches the metadata of given dataset for Operations",
+          "operationId": "getDatasetMetadataUsingGET_1",
+          "produces": [
+            "application/json"
+          ],
+          "parameters": [
+            {
+              "name": "dataset",
+              "in": "query",
+              "description": "dataset",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "layer",
+              "in": "query",
+              "description": "layer",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "sourceType",
+              "in": "query",
+              "description": "sourceType",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "vendor",
+              "in": "query",
+              "description": "vendor",
+              "required": false,
+              "type": "string"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "schema": {
+                "$ref": "#/definitions/ApiResponse«object»"
+              }
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden"
+            },
+            "404": {
+              "description": "Not Found"
+            }
+          },
+          "deprecated": false
+        }
+      },
+      "/api/v1/db/history": {
+        "get": {
+          "tags": [
+            "Data Browser Patient REST Endpoints"
+          ],
+          "summary": "Downloads access history",
+          "operationId": "fetchAccessHistoryUsingGET",
+          "produces": [
+            "application/json"
+          ],
+          "parameters": [
+            {
+              "name": "studyId",
+              "in": "query",
+              "description": "studyId",
+              "required": true,
+              "type": "string"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "schema": {
+                "$ref": "#/definitions/ByteArrayResource"
+              }
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden"
+            },
+            "404": {
+              "description": "Not Found"
+            }
+          },
+          "deprecated": false
+        }
+      },
+      "/api/v1/db/history/ops": {
+        "get": {
+          "tags": [
+            "Data Browser Operations REST Endpoints"
+          ],
+          "summary": "Downloads access history for Operations",
+          "operationId": "fetchAccessHistoryUsingGET_1",
+          "produces": [
+            "application/json"
+          ],
+          "parameters": [
+            {
+              "name": "layer",
+              "in": "query",
+              "description": "layer",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "name": "studyId",
+              "in": "query",
+              "description": "studyId",
+              "required": false,
+              "type": "string"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "schema": {
+                "$ref": "#/definitions/ByteArrayResource"
+              }
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden"
+            },
+            "404": {
+              "description": "Not Found"
+            }
+          },
+          "deprecated": false
+        }
+      },
+      "/api/v1/db/layer/datasets": {
+        "get": {
+          "tags": [
+            "Data Browser Patient REST Endpoints"
+          ],
+          "summary": "Gets layers and datasets associated with study",
+          "operationId": "getLayerDatasetForStudyUsingGET",
+          "produces": [
+            "application/json"
+          ],
+          "parameters": [
+            {
+              "name": "studyId",
+              "in": "query",
+              "description": "studyId",
+              "required": true,
+              "type": "string"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "schema": {
+                "$ref": "#/definitions/ApiResponse«object»"
+              }
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden"
+            },
+            "404": {
+              "description": "Not Found"
+            }
+          },
+          "deprecated": false
+        }
+      },
+      "/api/v1/db/layer/datasets/ops": {
+        "get": {
+          "tags": [
+            "Data Browser Operations REST Endpoints"
+          ],
+          "summary": "Gets layers and datasets for Operations",
+          "operationId": "getLayerDatasetUsingGET",
+          "produces": [
+            "application/json"
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "schema": {
+                "$ref": "#/definitions/ApiResponse«object»"
+              }
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden"
+            },
+            "404": {
+              "description": "Not Found"
+            }
+          },
+          "deprecated": false
+        }
+      },
+      "/api/v1/db/vendor/datasets/ops": {
+        "get": {
+          "tags": [
+            "Data Browser Operations REST Endpoints"
+          ],
+          "summary": "Gets datasets for given vendor for Operations",
+          "operationId": "getVendorDatasetUsingGET",
+          "produces": [
+            "application/json"
+          ],
+          "parameters": [
+            {
+              "name": "layer",
+              "in": "query",
+              "description": "layer",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "sourceType",
+              "in": "query",
+              "description": "sourceType",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "name": "vendor",
+              "in": "query",
+              "description": "vendor",
+              "required": true,
+              "type": "string"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "schema": {
+                "$ref": "#/definitions/ApiResponse«object»"
+              }
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden"
+            },
+            "404": {
+              "description": "Not Found"
+            }
+          },
+          "deprecated": false
+        }
+      }
+    },
+    "definitions": {
+      "ApiResponse«object»": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object"
+          },
+          "dataList": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "dataMap": {
+            "type": "object"
+          },
+          "metadataList": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/MetadataDto"
+            }
+          },
+          "msg": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "title": "ApiResponse«object»"
+      },
+      "ByteArrayResource": {
+        "type": "object",
+        "properties": {
+          "byteArray": {
+            "type": "string",
+            "format": "byte"
+          },
+          "description": {
+            "type": "string"
+          },
+          "file": {
+            "$ref": "#/definitions/File"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "inputStream": {
+            "$ref": "#/definitions/InputStream"
+          },
+          "open": {
+            "type": "boolean"
+          },
+          "readable": {
+            "type": "boolean"
+          },
+          "uri": {
+            "$ref": "#/definitions/URI"
+          },
+          "url": {
+            "$ref": "#/definitions/URL"
+          }
+        },
+        "title": "ByteArrayResource"
+      },
+      "CodeListInfo": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "codeListName": {
+            "type": "string"
+          },
+          "codeListOid": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "title": "CodeListInfo"
+      },
+      "File": {
+        "type": "object",
+        "properties": {
+          "absolute": {
+            "type": "boolean"
+          },
+          "absoluteFile": {
+            "$ref": "#/definitions/File"
+          },
+          "absolutePath": {
+            "type": "string"
+          },
+          "canonicalFile": {
+            "$ref": "#/definitions/File"
+          },
+          "canonicalPath": {
+            "type": "string"
+          },
+          "directory": {
+            "type": "boolean"
+          },
+          "file": {
+            "type": "boolean"
+          },
+          "freeSpace": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "hidden": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "parent": {
+            "type": "string"
+          },
+          "parentFile": {
+            "$ref": "#/definitions/File"
+          },
+          "path": {
+            "type": "string"
+          },
+          "totalSpace": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "usableSpace": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "title": "File"
+      },
+      "FilterDto": {
+        "type": "object",
+        "properties": {
+          "colName": {
+            "type": "string"
+          },
+          "colType": {
+            "type": "string"
+          },
+          "joinOperator": {
+            "type": "string"
+          },
+          "operator": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          },
+          "value": {
+            "type": "object"
+          }
+        },
+        "title": "FilterDto"
+      },
+      "InputStream": {
+        "type": "object",
+        "title": "InputStream"
+      },
+      "MetadataDto": {
+        "type": "object",
+        "properties": {
+          "codeListInfo": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/CodeListInfo"
+            }
+          },
+          "codelist": {
+            "type": "string"
+          },
+          "columnName": {
+            "type": "string"
+          },
+          "dataType": {
+            "type": "string"
+          },
+          "dataset": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "length": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "title": "MetadataDto"
+      },
+      "URI": {
+        "type": "object",
+        "properties": {
+          "absolute": {
+            "type": "boolean"
+          },
+          "authority": {
+            "type": "string"
+          },
+          "fragment": {
+            "type": "string"
+          },
+          "host": {
+            "type": "string"
+          },
+          "opaque": {
+            "type": "boolean"
+          },
+          "path": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "query": {
+            "type": "string"
+          },
+          "rawAuthority": {
+            "type": "string"
+          },
+          "rawFragment": {
+            "type": "string"
+          },
+          "rawPath": {
+            "type": "string"
+          },
+          "rawQuery": {
+            "type": "string"
+          },
+          "rawSchemeSpecificPart": {
+            "type": "string"
+          },
+          "rawUserInfo": {
+            "type": "string"
+          },
+          "scheme": {
+            "type": "string"
+          },
+          "schemeSpecificPart": {
+            "type": "string"
+          },
+          "userInfo": {
+            "type": "string"
+          }
+        },
+        "title": "URI"
+      },
+      "URL": {
+        "type": "object",
+        "properties": {
+          "authority": {
+            "type": "string"
+          },
+          "content": {
+            "type": "object"
+          },
+          "defaultPort": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "file": {
+            "type": "string"
+          },
+          "host": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "userInfo": {
+            "type": "string"
+          }
+        },
+        "title": "URL"
+      }
+    }
+  }
