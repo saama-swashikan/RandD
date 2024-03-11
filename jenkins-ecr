@@ -58,6 +58,7 @@ pipeline {
                                         unset AWS_ACCESS_KEY_ID
                                         unset AWS_SECRET_ACCESS_KEY
                                         cat images.txt
+echo ${isnor}
                                     """
                                 }                       
                             } else if (params.SOURCE_AWS_ACCOUNT == 'ai-research-saama') {
