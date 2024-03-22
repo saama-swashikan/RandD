@@ -105,7 +105,7 @@ container('sch-code-builder'){
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
                         sh '''
-                            for i in lsac-dev-sch-master-test; do
+                            for i in lsac-dev-sch-master-test lsac-dev-sch-alpha-app lsac-dev-sch-alpha-analytics; do
                             master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
 
                             if [ "$master" = "stopped" ] || [ "$master" = "stopping" ] || [ "$master" = "starting" ]; then
