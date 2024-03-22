@@ -1,0 +1,125 @@
+podTemplate(
+    containers: [
+        containerTemplate(
+            name: 'sch-code-builder',
+            image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-build-agent:sch-sit2-terragrunt',
+            command: 'cat',
+            ttyEnabled: true,
+            resourceLimitEphemeralStorage: '10Gi',
+            resourceLimitMemory: '16Gi'
+        )
+    ],
+    volumes: [
+        dynamicPVC(
+            requestsSize : '50Gi',
+            mountPath: '/var/lib/containers/storage/vfs'
+        )
+    ],
+    envVars: [
+        envVar(key: 'source_aws_account', value: '791532114280'),
+    ]
+) 
+{
+
+    properties([
+        parameters([
+            choice(
+            name: 'Environments', 
+            choices: ['Dev2'],
+            description: 'Select the Environment'
+            ),
+            choice(
+            name: 'Components', 
+            choices: ['Status', 'Start', 'Stop'],
+            description: 'Select the State of Instances'
+            )
+
+        ])
+    ])
+    node(POD_LABEL) {
+stage('Status Dev2 RDS Instances') {
+
+
+                script {
+                    if (params.Environments.contains('Dev2') && params.Components.contains('Status') ) {
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'aws_jenkins_dev', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                            for i in lsac-dev-sch-master-test lsac-dev-sch-alpha-app lsac-dev-sch-alpha-analytics; do
+                                aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text
+                            done
+                   '''
+                    }
+                }
+             }
+        }
+}
+stage('Start Dev2 RDS Instances') {
+
+
+                script {
+                    if (params.Environments.contains('Dev2') && params.Components.contains('Start') ) {
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'aws_jenkins_dev', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                            for i in lsac-dev-sch-master-test lsac-dev-sch-alpha-app lsac-dev-sch-alpha-analytics; do
+                            master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
+
+                            if [ "$master" = "available" ] || [ "$master" = "starting" ] || [ "$master" = "stopping" ]; then
+                                echo "$i is Already Available or in Starting State or else in Stopping State, Check Status"
+                            else
+                                aws rds start-db-instance --db-instance-identifier $i --region us-east-1 2>&1 > /dev/null
+                                echo "$i is Started"
+                            fi
+                            done
+                   '''
+                    }
+                }
+             }
+        }
+}
+
+stage('Stop Dev2 RDS Instances') {
+
+
+                script {
+                    if (params.Environments.contains('Dev2') && params.Components.contains('Stop')) {
+container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId: 'aws_jenkins_dev', // Replace with your AWS credentials ID
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                            for i in lsac-dev-sch-master-test lsac-dev-sch-alpha-app lsac-dev-sch-alpha-analytics; do
+                            master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
+
+                            if [ "$master" = "stopped" ] || [ "$master" = "stopping" ] || [ "$master" = "starting" ]; then
+                                echo "$i is Already Stopped or in Stopping State or else in Starting State, Check Status"
+                            else
+                                aws rds stop-db-instance --db-instance-identifier $i --region us-east-1 2>&1 > /dev/null
+                                echo "$i is Stopped"
+                            fi
+                            done
+                   '''
+                    }
+                }
+             }
+        }
+}
+}
+}
