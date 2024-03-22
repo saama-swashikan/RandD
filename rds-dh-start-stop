@@ -78,7 +78,7 @@ container('sch-code-builder'){
                             master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
 
                             if [ "$master" = "available" ] || [ "$master" = "starting" ] || [ "$master" = "stopping" ]; then
-                                echo "$i is Already Available or in Starting State or else in Stopping State, Check Status"
+                                echo "$i is not in Stopped State, Check Status"
                             else
                                 aws rds start-db-instance --db-instance-identifier $i --region us-east-1 2>&1 > /dev/null
                                 echo "$i is Started"
@@ -109,7 +109,7 @@ container('sch-code-builder'){
                             master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
 
                             if [ "$master" = "stopped" ] || [ "$master" = "stopping" ] || [ "$master" = "starting" ]; then
-                                echo "$i is Already Stopped or in Stopping State or else in Starting State, Check Status"
+                                echo "$i is not in Available State, Check Status"
                             else
                                 aws rds stop-db-instance --db-instance-identifier $i --region us-east-1 2>&1 > /dev/null
                                 echo "$i is Stopped"
