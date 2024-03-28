@@ -16,7 +16,7 @@ podTemplate(
         )
     ],
     envVars: [
-        envVar(key: 'Dev2rds', value: 'swashikan swashikan'),
+        envVar(key: '$Environments', value: 'swashikan swashikan'),
         envVar(key: 'BUILD_NUMBER', value: 'bha'),
         envVar(key: 'BUILD_ID', value: 'bhas'),
 
@@ -55,15 +55,8 @@ container('sch-code-builder'){
                     ]]) {
 
                         sh '''
-echo "$BUILD_ID"
-varName="BUILD_NUMBER"
 
-# Bash will expand this as echo "$BUILD_NUMBER", which will use the environment
-# variable defined earlier, inside this shell script or passed to env in the groovy
-# script
-echo "${!varName}"
-
-echo “${”$Environments"}"
+echo ”${Environments}"
                             for i in $Dev2rds; do
                                 aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text
                             done
