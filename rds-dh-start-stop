@@ -56,17 +56,20 @@ container('sch-code-builder'){
                     switch(params.Environments) {
                         case "Dev2": 
 sh """
-export new=$Dev2rds
+echo $Dev2rds > new.txt
+pwd
+ls
 """
 break
                         case "PRE": echo "./deploy.sh pre"; break
                         case "PROD": echo "./deploy.sh prod"; break
                     }
                         sh '''
-
+ls 
+pwd
 echo $Environments 
-echo $new
-                            for i in $new; do
+echo `cat new.txt`
+                            for i in `cat new.txt`; do
                                 aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text
                             done
                    '''
