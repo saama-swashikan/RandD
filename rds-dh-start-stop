@@ -22,7 +22,7 @@ podTemplate(
         envVar(key: 'Sit', value: 'swashikan Sit'),
         envVar(key: 'Sit2', value: 'swashikan Sit2'),
         envVar(key: 'Sit3', value: 'swashikan Sit3'),
-        envVar(key: 'Poc, value: 'swashikan Poc'),
+        envVar(key: 'Poc', value: 'swashikan Poc'),
         envVar(key: 'Rtest', value: 'swashikan Rtest')
 
     ]
