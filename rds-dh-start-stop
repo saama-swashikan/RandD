@@ -72,7 +72,6 @@ container('sch-code-builder'){
                             for i in `cat rds`; do
                                 set +x
                                 aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text >> status.txt
-                                set -x
                             done
                             cat status.txt
                    '''
