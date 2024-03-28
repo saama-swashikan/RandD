@@ -54,19 +54,11 @@ container('sch-code-builder'){
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
                     switch(params.Environments) {
-                        case "Dev2": 
-sh """
-echo $Dev2rds > new.txt
-pwd
-ls
-"""
-break
+                        case "Dev2": sh """ echo $Dev2rds > new.txt """ break
                         case "PRE": echo "./deploy.sh pre"; break
                         case "PROD": echo "./deploy.sh prod"; break
                     }
                         sh '''
-ls 
-pwd
 echo $Environments 
 echo `cat new.txt`
                             for i in `cat new.txt`; do
