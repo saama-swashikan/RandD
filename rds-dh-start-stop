@@ -73,6 +73,7 @@ container('sch-code-builder'){
                             boldon=`tput smso`
                             boldoff=`tput rmso`
                             echo " "
+                            echo " "
                             echo "The Environment Selected to View Status is ${boldon}${Environments}${boldoff}"
                             echo " "
                             echo " "
@@ -81,6 +82,8 @@ container('sch-code-builder'){
                             echo "RDS ${boldon}${i}${boldoff} is in ${boldon}${status}${boldoff} State."
                             echo " "                            
                             done
+                            echo " "
+                            echo " "
                    '''
                     }
                 }
@@ -115,7 +118,9 @@ container('sch-code-builder'){
                             boldon=`tput smso`
                             boldoff=`tput rmso`
                             echo " "
+                            echo " "
                             echo "The Environment Selected to Start RDS Instances is ${boldon}${Environments}${boldoff}"
+                            echo " "
                             echo " "
                             for i in `cat rds`; do
                                 master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
@@ -128,6 +133,8 @@ container('sch-code-builder'){
                                     echo " "
                                 fi
                             done
+                            echo " "
+                            echo " "
                    '''
                     }
                 }
@@ -163,7 +170,9 @@ container('sch-code-builder'){
                             boldon=`tput smso`
                             boldoff=`tput rmso`
                             echo " "
+                            echo " "
                             echo "The Environment Selected to Stop RDS Instances is ${boldon}${Environments}${boldoff}"
+                            echo " "
                             echo " "
                             for i in `cat rds`; do
                                 master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
@@ -177,6 +186,8 @@ container('sch-code-builder'){
                                     echo " "
                                 fi
                             done
+                            echo " "
+                            echo " "
                    '''
                     }
                 }
