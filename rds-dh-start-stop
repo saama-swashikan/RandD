@@ -53,7 +53,7 @@ container('sch-code-builder'){
                         sh '''
 echo $Environments
 
-                            for i in $Environments; do
+                            for i in env.$Environments; do
                                 aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text
                             done
                    '''
