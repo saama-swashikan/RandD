@@ -16,7 +16,7 @@ podTemplate(
         )
     ],
     envVars: [
-        envVar(key: 'dev2', value: 'swashikan swashikan'),
+        envVar(key: 'Dev2rds', value: 'swashikan swashikan'),
         envVar(key: 'BUILD_NUMBER', value: 'bha'),
         envVar(key: 'BUILD_ID', value: 'bhas')
 
@@ -54,14 +54,14 @@ container('sch-code-builder'){
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
                     switch(params.Environments) {
-                        case "Dev2": echo "export int="; break
+                        case "Dev2": export new=$Dev2rds; break
                         case "PRE": echo "./deploy.sh pre"; break
                         case "PROD": echo "./deploy.sh prod"; break
                     }
                         sh '''
 
 echo $Environments 
-
+echo $new
                             for i in $Dev2rds; do
                                 aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text
                             done
