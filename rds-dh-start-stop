@@ -75,6 +75,7 @@ container('sch-code-builder'){
                             echo " "
                             echo "The Environment Selected to View Status is ${boldon}${Environments}${boldoff}"
                             echo " "
+                            echo " "
                             for i in `cat rds`; do
                                 status=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceStatus]' --output text`
                             echo "RDS ${boldon}${i}${boldoff} is in ${boldon}${status}${boldoff} State."
