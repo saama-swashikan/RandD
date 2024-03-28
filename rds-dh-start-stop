@@ -107,7 +107,7 @@ container('sch-code-builder'){
                             for i in `cat rds`; do
 set +x
                             master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
-set -x
+
                             echo "$i is in $master State"
 set +x 
                             if [ "$master" = "available" ] || [ "$master" = "starting" ] || [ "$master" = "stopping" ]; then
