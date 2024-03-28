@@ -60,7 +60,7 @@ container('sch-code-builder'){
                     ]]) {
                     switch(params.Environments) {
                         case "Dev": sh " echo $Dev > rds "; break
-                        case "Dev2": sh " echo $Dev2 > rds "; break
+                        case "Dev2": sh "set +x; echo $Dev2 > rds "; break
                         case "Dev3": sh " echo $Dev2 > rds "; break
                         case "Sit": sh " echo $Sit > rds "; break
                         case "Sit2": sh " echo $Sit2 > rds "; break
@@ -80,7 +80,7 @@ container('sch-code-builder'){
              }
         }
 }
-stage('Start $Environments RDS Instances') {
+stage('Start RDS Instances') {
 
 
                 script {
