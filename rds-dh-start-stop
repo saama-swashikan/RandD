@@ -16,7 +16,7 @@ podTemplate(
         )
     ],
     envVars: [
-        envVar(key: 'Dev2rds', value: 'swashikan swashikan'),
+        envVar(key: 'Dev2rds', value: 'swashikan'),
         envVar(key: 'Dev2', value: 'bha'),
     ]
 ) 
