@@ -16,8 +16,14 @@ podTemplate(
         )
     ],
     envVars: [
-        envVar(key: 'Dev', value: 'swashikan swashikan'),
-        envVar(key: 'Dev2', value: 'swashikan swashikan')
+        envVar(key: 'Dev', value: 'swashikan Dev'),
+        envVar(key: 'Dev2', value: 'swashikan lsac-dev-sch-master-test lsac-dev-sch-alpha-app lsac-dev-sch-alpha-analytics'),
+        envVar(key: 'Dev3', value: 'swashikan Dev3'),
+        envVar(key: 'Sit', value: 'swashikan Sit'),
+        envVar(key: 'Sit2', value: 'swashikan Sit2'),
+        envVar(key: 'Sit3', value: 'swashikan Sit3'),
+        envVar(key: 'Poc, value: 'swashikan Poc'),
+        envVar(key: 'Rtest', value: 'swashikan Rtest')
 
     ]
 ) 
@@ -27,7 +33,7 @@ podTemplate(
         parameters([
             choice(
             name: 'Environments', 
-            choices: ['Dev','Dev2'],
+            choices: ['Dev','Dev2','Dev3','Sit','Sit2','Sit3','Poc','Rtest'],
             description: 'Select the Environment'
             ),
             choice(
@@ -54,8 +60,13 @@ container('sch-code-builder'){
                     ]]) {
                     switch(params.Environments) {
                         case "Dev": sh " echo $Dev > rds "; break
-                        case "Dev2": sh " echo $Dev2 > new.txt "; break
-                        case "Dev2": sh " echo $Dev2 > new.txt "; break
+                        case "Dev2": sh " echo $Dev2 > rds "; break
+                        case "Dev3": sh " echo $Dev2 > rds "; break
+                        case "Sit": sh " echo $Sit > rds "; break
+                        case "Sit2": sh " echo $Sit2 > rds "; break
+                        case "Sit3": sh " echo $Sit3 > rds "; break
+                        case "Poc": sh " echo $Poc > rds "; break
+                        case "Rtest": sh " echo $Rtest > rds "; break
                     }
                         sh '''
                             for i in `cat rds`; do
@@ -81,7 +92,7 @@ container('sch-code-builder'){
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
                         sh '''
-                            for i in swashikan; do
+                            for i in `cat rds`; do
                             master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
 
                             if [ "$master" = "available" ] || [ "$master" = "starting" ] || [ "$master" = "stopping" ]; then
@@ -112,7 +123,7 @@ container('sch-code-builder'){
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
                         sh '''
-                            for i in swashikan; do
+                            for i in `cat rds`; do
                             master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
 
                             if [ "$master" = "stopped" ] || [ "$master" = "stopping" ] || [ "$master" = "starting" ]; then
