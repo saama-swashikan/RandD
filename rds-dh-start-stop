@@ -41,7 +41,7 @@ stage('Status Dev2 RDS Instances') {
 
 
                 script {
-                    if (params.Environments.contains('$Environments') && params.Components.contains('Status') ) {
+                    if (params.Components.contains('Status') ) {
 container('sch-code-builder'){
                     // Stage 1: Pull Docker image using AWS credentials
                     withCredentials([[
@@ -51,6 +51,7 @@ container('sch-code-builder'){
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
                         sh '''
+echo $Environments
                             for i in swashikan; do
                                 aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text
                             done
