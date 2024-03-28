@@ -17,8 +17,9 @@ podTemplate(
     ],
     envVars: [
         envVar(key: 'Dev2rds', value: 'swashikan swashikan'),
-        envVar(key: 'Dev2', value: 'bha'),
-        envVar(key: 'newDev2', value: 'bhas')
+        envVar(key: 'BUILD_NUMBER', value: 'bha'),
+        envVar(key: 'BUILD_ID', value: 'bhas'),
+
     ]
 ) 
 {
@@ -52,8 +53,15 @@ container('sch-code-builder'){
                         credentialsId: 'aws_jenkins_dev', // Replace with your AWS credentials ID
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
-sh "echo “${”$Environments"}""
+
                         sh '''
+echo "$BUILD_ID"
+varName="BUILD_NUMBER"
+
+# Bash will expand this as echo "$BUILD_NUMBER", which will use the environment
+# variable defined earlier, inside this shell script or passed to env in the groovy
+# script
+echo "${!varName}"
 
 echo “${”$Environments"}"
                             for i in $Dev2rds; do
