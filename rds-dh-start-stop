@@ -70,6 +70,7 @@ container('sch-code-builder'){
                     }
                         sh '''
                             set +x
+                            echo "The Environment Selected is $Environments"
                             for i in `cat rds`; do
                                 aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text >> status.txt
                             done
@@ -107,6 +108,7 @@ container('sch-code-builder'){
                             set +x
                             boldon=`tput smso`
                             boldoff=`tput rmso`
+                            echo "The Environment Selected is ${boldon}${Environments}${boldoff}"
                             for i in `cat rds`; do
                                 master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
                                 if [ "$master" = "stopped" ]; then
@@ -150,6 +152,7 @@ container('sch-code-builder'){
                             set +x
                             boldon=`tput smso`
                             boldoff=`tput rmso`
+                            echo "The Environment Selected is ${boldon}${Environments}${boldoff}"
                             for i in `cat rds`; do
                                 master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
     
