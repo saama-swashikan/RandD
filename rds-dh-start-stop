@@ -77,7 +77,7 @@ container('sch-code-builder'){
                             echo " "
                             for i in `cat rds`; do
                                 status=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceStatus]' --output text`
-                            echo "RDS ${boldon}${i}${boldoff} is in ${boldon}${status}${boldoff} State"
+                            echo "RDS ${boldon}${i}${boldoff} is in ${boldon}${status}${boldoff} State."
                             echo " "                            
                             done
                    '''
