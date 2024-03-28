@@ -54,7 +54,7 @@ container('sch-code-builder'){
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
                     switch(params.Environments) {
-                        case "Dev2": export new=$Dev2rds; break
+                        case "Dev2": echo "./deploy.sh pre"; break
                         case "PRE": echo "./deploy.sh pre"; break
                         case "PROD": echo "./deploy.sh prod"; break
                     }
