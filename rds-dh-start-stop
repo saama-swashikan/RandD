@@ -113,9 +113,9 @@ container('sch-code-builder'){
                                 master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
                                 if [ "$master" = "stopped" ]; then
                                     aws rds start-db-instance --db-instance-identifier $i --region us-east-1 2>&1 > /dev/null
-                                    echo "${boldon}${i}${boldoff} is ${boldon}Started${boldoff}, Which was in ${master} State."
+                                    echo "RDS ${boldon}${i}${boldoff} is ${boldon}Started${boldoff}, Which was in ${master} State."
                                 else
-                                    echo "${boldon}${i}${boldoff} is in ${boldon}${master}${boldoff} State, Needed to be Stopped Before Starting Up."
+                                    echo "RDS ${boldon}${i}${boldoff} is in ${boldon}${master}${boldoff} State, Needed to be Stopped Before Starting Up."
                                 fi
                             done
                    '''
@@ -158,9 +158,9 @@ container('sch-code-builder'){
     
                                 if [ "$master" = "available" ]; then
                                     aws rds stop-db-instance --db-instance-identifier $i --region us-east-1 2>&1 > /dev/null
-                                    echo "${boldon}${i}${boldoff} is ${boldon}Stopped${boldoff}, Which was in ${master} State."
+                                    echo "RDS ${boldon}${i}${boldoff} is ${boldon}Stopped${boldoff}, Which was in ${master} State."
                                 else
-                                    echo "${boldon}${i}${boldoff} is in ${boldon}${master}${boldoff} State, Needed to be Available Before Shutting Down."
+                                    echo "RDS ${boldon}${i}${boldoff} is in ${boldon}${master}${boldoff} State, Needed to be Available Before Shutting Down."
                                 fi
                             done
                    '''
