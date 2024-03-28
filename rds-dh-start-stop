@@ -57,7 +57,7 @@ container('sch-code-builder'){
                         sh '''
 
 echo $Environments
-echo "${dev2}"
+echo "${$Environments}"
                             for i in $Dev2rds; do
                                 aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text
                             done
