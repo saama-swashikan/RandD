@@ -126,10 +126,10 @@ container('sch-code-builder'){
                                 master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
                                 if [ "$master" = "stopped" ]; then
                                     aws rds start-db-instance --db-instance-identifier $i --region us-east-1 2>&1 > /dev/null
-                                    echo "RDS ${boldon}${i}${boldoff} is ${boldon}Started${boldoff} Now. Previously, Which was in ${master} State."
+                                    echo "RDS ${boldon}${i}${boldoff} is ${boldon}Starting${boldoff} Now. Previously, Which was in Stopped State."
                                     echo " "
                                 else
-                                    echo "RDS ${boldon}${i}${boldoff} is in ${boldon}${master}${boldoff} State, Needed to be in Stopped State Before Starting Up."
+                                    echo "RDS ${boldon}${i}${boldoff} is in ${boldon}${master}${boldoff} State, It Needed to be in Stopped State Before Starting Up."
                                     echo " "
                                 fi
                             done
@@ -179,10 +179,10 @@ container('sch-code-builder'){
     
                                 if [ "$master" = "available" ]; then
                                     aws rds stop-db-instance --db-instance-identifier $i --region us-east-1 2>&1 > /dev/null
-                                    echo "RDS ${boldon}${i}${boldoff} is ${boldon}Stopped${boldoff} Now. Previously, Which was in ${master} State."
+                                    echo "RDS ${boldon}${i}${boldoff} is ${boldon}Stopping${boldoff} Now. Previously, Which was in Available State."
                                     echo " "
                                 else
-                                    echo "RDS ${boldon}${i}${boldoff} is in ${boldon}${master}${boldoff} State, Needed to be in Available State Before Shutting Down."
+                                    echo "RDS ${boldon}${i}${boldoff} is in ${boldon}${master}${boldoff} State, It Needed to be in Available State Before Shutting Down."
                                     echo " "
                                 fi
                             done
