@@ -52,9 +52,13 @@ container('sch-code-builder'){
                         credentialsId: 'aws_jenkins_dev', // Replace with your AWS credentials ID
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
+sh """
+new=${params.Environments}
+echo 'output: ${env[new]}'
+"""
                         sh '''
-export swash="new${Environments}"
-echo "\$$swash"
+echo "${Environments}"
+
                             for i in $Dev2rds; do
                                 aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text
                             done
