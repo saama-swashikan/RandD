@@ -70,14 +70,16 @@ container('sch-code-builder'){
                     }
                         sh '''
                             set +x
+                            boldon=`tput smso`
+                            boldoff=`tput rmso`
                             echo " "
-                            echo "The Environment Selected is $Environments"
-                            echo " "
+                            echo "The Environment Selected is ${boldon}${Environments}${boldoff}"
                             echo " "
                             for i in `cat rds`; do
-                                aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text >> status.txt
+                                status=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceStatus]' --output text`
+                            echo "RDS ${boldon}${i}${boldoff} is in ${boldon}${status}${boldoff} State"
+                            echo " "                            
                             done
-                            cat status.txt
                    '''
                     }
                 }
@@ -113,7 +115,6 @@ container('sch-code-builder'){
                             boldoff=`tput rmso`
                             echo " "
                             echo "The Environment Selected is ${boldon}${Environments}${boldoff}"
-                            echo " "
                             echo " "
                             for i in `cat rds`; do
                                 master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
@@ -162,7 +163,6 @@ container('sch-code-builder'){
                             boldoff=`tput rmso`
                             echo " "
                             echo "The Environment Selected is ${boldon}${Environments}${boldoff}"
-                            echo " "
                             echo " "
                             for i in `cat rds`; do
                                 master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
