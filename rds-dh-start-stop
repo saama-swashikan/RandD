@@ -56,8 +56,8 @@ container('sch-code-builder'){
 
                         sh '''
 
-echo $Environments
-echo "${!$Environments}"
+echo $Environments > new.txt
+echo `cat new.txt`
                             for i in $Dev2rds; do
                                 aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text
                             done
