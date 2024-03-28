@@ -52,10 +52,13 @@ container('sch-code-builder'){
                         credentialsId: 'aws_jenkins_dev', // Replace with your AWS credentials ID
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
-                        sh '''
+sh """
 var1="this is the real value"
 a="var1"
 echo "${!a}"
+"""
+                        sh '''
+
 export swash="new${Environments}"
 echo "${!swash}"
                             for i in $Dev2rds; do
