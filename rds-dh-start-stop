@@ -70,7 +70,10 @@ container('sch-code-builder'){
                     }
                         sh '''
                             set +x
+                            echo " "
                             echo "The Environment Selected is $Environments"
+                            echo " "
+                            echo " "
                             for i in `cat rds`; do
                                 aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text >> status.txt
                             done
@@ -108,14 +111,19 @@ container('sch-code-builder'){
                             set +x
                             boldon=`tput smso`
                             boldoff=`tput rmso`
+                            echo " "
                             echo "The Environment Selected is ${boldon}${Environments}${boldoff}"
+                            echo " "
+                            echo " "
                             for i in `cat rds`; do
                                 master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
                                 if [ "$master" = "stopped" ]; then
                                     aws rds start-db-instance --db-instance-identifier $i --region us-east-1 2>&1 > /dev/null
-                                    echo "RDS ${boldon}${i}${boldoff} is ${boldon}Started${boldoff}, Which was in ${master} State."
+                                    echo "RDS ${boldon}${i}${boldoff} is ${boldon}Started${boldoff}. Previously, Which was in ${master} State."
+                                    echo " "
                                 else
                                     echo "RDS ${boldon}${i}${boldoff} is in ${boldon}${master}${boldoff} State, Needed to be Stopped Before Starting Up."
+                                    echo " "
                                 fi
                             done
                    '''
@@ -152,15 +160,20 @@ container('sch-code-builder'){
                             set +x
                             boldon=`tput smso`
                             boldoff=`tput rmso`
+                            echo " "
                             echo "The Environment Selected is ${boldon}${Environments}${boldoff}"
+                            echo " "
+                            echo " "
                             for i in `cat rds`; do
                                 master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
     
                                 if [ "$master" = "available" ]; then
                                     aws rds stop-db-instance --db-instance-identifier $i --region us-east-1 2>&1 > /dev/null
-                                    echo "RDS ${boldon}${i}${boldoff} is ${boldon}Stopped${boldoff}, Which was in ${master} State."
+                                    echo "RDS ${boldon}${i}${boldoff} is ${boldon}Stopped${boldoff}. Previously, Which was in ${master} State."
+                                    echo " "
                                 else
                                     echo "RDS ${boldon}${i}${boldoff} is in ${boldon}${master}${boldoff} State, Needed to be Available Before Shutting Down."
+                                    echo " "
                                 fi
                             done
                    '''
