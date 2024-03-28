@@ -53,9 +53,8 @@ container('sch-code-builder'){
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
                         sh '''
-echo "new${Environments}"
-
-
+export swash="new${Environments}"
+echo "${swash}"
                             for i in $Dev2rds; do
                                 aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text
                             done
