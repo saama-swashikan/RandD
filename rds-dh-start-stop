@@ -54,7 +54,7 @@ container('sch-code-builder'){
                     ]]) {
 sh """
 new=${params.Environments}
-echo 'output: ${env[new]}'
+echo 'output: \${env[new]}'
 """
                         sh '''
 echo "${Environments}"
