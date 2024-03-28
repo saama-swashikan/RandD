@@ -85,7 +85,7 @@ stage('Start RDS Instances') {
 
 
                 script {
-                    if (params.Environments.contains('Dev2') && params.Components.contains('Start') ) {
+                    if (params.Components.contains('Start') ) {
 container('sch-code-builder'){
                     // Stage 1: Pull Docker image using AWS credentials
                     withCredentials([[
@@ -129,7 +129,7 @@ stage('Stop RDS Instances') {
 
 
                 script {
-                    if (params.Environments.contains('Dev2') && params.Components.contains('Stop')) {
+                    if (params.Components.contains('Stop')) {
 container('sch-code-builder'){
                     // Stage 1: Pull Docker image using AWS credentials
                     withCredentials([[
