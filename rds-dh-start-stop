@@ -53,7 +53,7 @@ container('sch-code-builder'){
                         sh '''
 echo $Environments
 
-export rds=env.$Environments
+export rds=$$Environments
 
                             for i in $rds; do
                                 aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text
