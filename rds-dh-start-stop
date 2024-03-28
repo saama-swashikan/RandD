@@ -59,14 +59,14 @@ container('sch-code-builder'){
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
                     switch(params.Environments) {
-                        case "Dev": sh " echo $Dev > rds "; break
+                        case "Dev": sh "set +x; echo $Dev > rds "; break
                         case "Dev2": sh "set +x; echo $Dev2 > rds "; break
-                        case "Dev3": sh " echo $Dev2 > rds "; break
-                        case "Sit": sh " echo $Sit > rds "; break
-                        case "Sit2": sh " echo $Sit2 > rds "; break
-                        case "Sit3": sh " echo $Sit3 > rds "; break
-                        case "Poc": sh " echo $Poc > rds "; break
-                        case "Rtest": sh " echo $Rtest > rds "; break
+                        case "Dev3": sh "set +x; echo $Dev2 > rds "; break
+                        case "Sit": sh "set +x; echo $Sit > rds "; break
+                        case "Sit2": sh "set +x; echo $Sit2 > rds "; break
+                        case "Sit3": sh "set +x; echo $Sit3 > rds "; break
+                        case "Poc": sh "set +x; echo $Poc > rds "; break
+                        case "Rtest": sh "set +x; echo $Rtest > rds "; break
                     }
                         sh '''
                             set +x
@@ -94,14 +94,14 @@ container('sch-code-builder'){
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
                     switch(params.Environments) {
-                        case "Dev": sh " echo $Dev > rds "; break
-                        case "Dev2": sh " echo $Dev2 > rds "; break
-                        case "Dev3": sh " echo $Dev2 > rds "; break
-                        case "Sit": sh " echo $Sit > rds "; break
-                        case "Sit2": sh " echo $Sit2 > rds "; break
-                        case "Sit3": sh " echo $Sit3 > rds "; break
-                        case "Poc": sh " echo $Poc > rds "; break
-                        case "Rtest": sh " echo $Rtest > rds "; break
+                        case "Dev": sh "set +x; echo $Dev > rds "; break
+                        case "Dev2": sh "set +x; echo $Dev2 > rds "; break
+                        case "Dev3": sh "set +x; echo $Dev2 > rds "; break
+                        case "Sit": sh "set +x; echo $Sit > rds "; break
+                        case "Sit2": sh "set +x; echo $Sit2 > rds "; break
+                        case "Sit3": sh "set +x; echo $Sit3 > rds "; break
+                        case "Poc": sh "set +x; echo $Poc > rds "; break
+                        case "Rtest": sh "set +x; echo $Rtest > rds "; break
                     }
                         sh '''
                             set +x
@@ -137,14 +137,14 @@ container('sch-code-builder'){
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
                     switch(params.Environments) {
-                        case "Dev": sh " echo $Dev > rds "; break
-                        case "Dev2": sh " echo $Dev2 > rds "; break
-                        case "Dev3": sh " echo $Dev2 > rds "; break
-                        case "Sit": sh " echo $Sit > rds "; break
-                        case "Sit2": sh " echo $Sit2 > rds "; break
-                        case "Sit3": sh " echo $Sit3 > rds "; break
-                        case "Poc": sh " echo $Poc > rds "; break
-                        case "Rtest": sh " echo $Rtest > rds "; break
+                        case "Dev": sh "set +x; echo $Dev > rds "; break
+                        case "Dev2": sh "set +x; echo $Dev2 > rds "; break
+                        case "Dev3": sh "set +x; echo $Dev2 > rds "; break
+                        case "Sit": sh "set +x; echo $Sit > rds "; break
+                        case "Sit2": sh "set +x; echo $Sit2 > rds "; break
+                        case "Sit3": sh "set +x; echo $Sit3 > rds "; break
+                        case "Poc": sh "set +x; echo $Poc > rds "; break
+                        case "Rtest": sh "set +x; echo $Rtest > rds "; break
                     }
                         sh '''
                             set +x
