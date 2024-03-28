@@ -16,8 +16,8 @@ podTemplate(
         )
     ],
     envVars: [
-        envVar(key: 'Dev', value: 'swashikan Dev'),
-        envVar(key: 'Dev2', value: 'swashikan lsac-dev-sch-master-test lsac-dev-sch-alpha-app lsac-dev-sch-alpha-analytics'),
+        envVar(key: 'Dev', value: 'swashikan'),
+        envVar(key: 'Dev2', value: 'lsac-dev-sch-master-test lsac-dev-sch-alpha-app lsac-dev-sch-alpha-analytics'),
         envVar(key: 'Dev3', value: 'swashikan Dev3'),
         envVar(key: 'Sit', value: 'swashikan Sit'),
         envVar(key: 'Sit2', value: 'swashikan Sit2'),
@@ -33,7 +33,7 @@ podTemplate(
         parameters([
             choice(
             name: 'Environments', 
-            choices: ['Dev','Dev2','Dev3','Sit','Sit2','Sit3','Poc','Rtest'],
+            choices: ['Dev','Dev2'],
             description: 'Select the Environment'
             ),
             choice(
