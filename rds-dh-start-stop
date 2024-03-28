@@ -16,7 +16,7 @@ podTemplate(
         )
     ],
     envVars: [
-        envVar(key: 'Dev2-rds', value: 'swashikan swashikan'),
+        envVar(key: 'Dev2rds', value: 'swashikan swashikan'),
     ]
 ) 
 {
@@ -54,7 +54,7 @@ container('sch-code-builder'){
 echo $Environments
 
 
-                            for i in $Dev2-rds; do
+                            for i in $Dev2rds; do
                                 aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text
                             done
                    '''
