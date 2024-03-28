@@ -93,6 +93,16 @@ container('sch-code-builder'){
                         credentialsId: 'aws_jenkins_dev', // Replace with your AWS credentials ID
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
+                    switch(params.Environments) {
+                        case "Dev": sh " echo $Dev > rds "; break
+                        case "Dev2": sh " echo $Dev2 > rds "; break
+                        case "Dev3": sh " echo $Dev2 > rds "; break
+                        case "Sit": sh " echo $Sit > rds "; break
+                        case "Sit2": sh " echo $Sit2 > rds "; break
+                        case "Sit3": sh " echo $Sit3 > rds "; break
+                        case "Poc": sh " echo $Poc > rds "; break
+                        case "Rtest": sh " echo $Rtest > rds "; break
+                    }
                         sh '''
                             for i in `cat rds`; do
                             master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
@@ -124,6 +134,16 @@ container('sch-code-builder'){
                         credentialsId: 'aws_jenkins_dev', // Replace with your AWS credentials ID
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
+                    switch(params.Environments) {
+                        case "Dev": sh " echo $Dev > rds "; break
+                        case "Dev2": sh " echo $Dev2 > rds "; break
+                        case "Dev3": sh " echo $Dev2 > rds "; break
+                        case "Sit": sh " echo $Sit > rds "; break
+                        case "Sit2": sh " echo $Sit2 > rds "; break
+                        case "Sit3": sh " echo $Sit3 > rds "; break
+                        case "Poc": sh " echo $Poc > rds "; break
+                        case "Rtest": sh " echo $Rtest > rds "; break
+                    }
                         sh '''
                             for i in `cat rds`; do
                             master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
