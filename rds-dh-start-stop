@@ -45,7 +45,7 @@ podTemplate(
         ])
     ])
     node(POD_LABEL) {
-stage('Status Dev2 RDS Instances') {
+stage('Status RDS Instances') {
 
 
                 script {
@@ -80,7 +80,7 @@ container('sch-code-builder'){
              }
         }
 }
-stage('Start Dev2 RDS Instances') {
+stage('Start $Environments RDS Instances') {
 
 
                 script {
@@ -123,7 +123,7 @@ container('sch-code-builder'){
         }
 }
 
-stage('Stop Dev2 RDS Instances') {
+stage('Stop RDS Instances') {
 
 
                 script {
