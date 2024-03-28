@@ -104,6 +104,8 @@ container('sch-code-builder'){
                         case "Rtest": sh " echo $Rtest > rds "; break
                     }
                         sh '''
+                            boldon=`tput smso`
+                            boldoff=`tput rmso`
                             for i in `cat rds`; do
                                 set +x
                                 master=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text | awk '{print $2}'`
@@ -111,7 +113,7 @@ container('sch-code-builder'){
                                     aws rds start-db-instance --db-instance-identifier $i --region us-east-1 2>&1 > /dev/null
                                     echo "$i is Started"
                                 else
-                                    echo "$i is in $master State, Needed to be Stopped Before Turning On."
+                                    echo "$i is in ${boldon} $master ${boldoff} State, Needed to be Stopped Before Turning On."
     
                                 fi
                             done
