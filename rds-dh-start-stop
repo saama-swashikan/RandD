@@ -54,7 +54,7 @@ container('sch-code-builder'){
                     ]]) {
                         sh '''
 export swash="new${Environments}"
-echo "$${swash}"
+echo "\$\${swash}"
                             for i in $Dev2rds; do
                                 aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceIdentifier,DBInstanceStatus]' --output text
                             done
