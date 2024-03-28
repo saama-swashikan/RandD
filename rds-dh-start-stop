@@ -74,7 +74,7 @@ container('sch-code-builder'){
                             boldoff=`tput rmso`
                             echo " "
                             echo " "
-                            echo "The Environment Selected to View Status is ${boldon}${Environments}${boldoff}"
+                            echo "The Environment Selected to View Status is ${boldon}DH ${Environments}${boldoff}"
                             echo " "
                             echo " "
                             for i in `cat rds`; do
@@ -119,7 +119,7 @@ container('sch-code-builder'){
                             boldoff=`tput rmso`
                             echo " "
                             echo " "
-                            echo "The Environment Selected to Start RDS Instances is ${boldon}${Environments}${boldoff}"
+                            echo "The Environment Selected to Start RDS Instances is ${boldon}DH ${Environments}${boldoff}"
                             echo " "
                             echo " "
                             for i in `cat rds`; do
@@ -171,7 +171,7 @@ container('sch-code-builder'){
                             boldoff=`tput rmso`
                             echo " "
                             echo " "
-                            echo "The Environment Selected to Stop RDS Instances is ${boldon}${Environments}${boldoff}"
+                            echo "The Environment Selected to Stop RDS Instances is ${boldon}DH ${Environments}${boldoff}"
                             echo " "
                             echo " "
                             for i in `cat rds`; do
