@@ -17,7 +17,8 @@ podTemplate(
     ],
     envVars: [
         envVar(key: 'Dev2rds', value: 'swashikan swashikan'),
-        envVar(key: 'Dev2', value: 'bha')
+        envVar(key: 'Dev2', value: 'bha'),
+        envVar(key: 'newDev2', value: 'bhas')
     ]
 ) 
 {
@@ -52,7 +53,7 @@ container('sch-code-builder'){
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
                         sh '''
-echo "${Environments}"
+echo "new${Environments}"
 
 
                             for i in $Dev2rds; do
