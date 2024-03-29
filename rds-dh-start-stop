@@ -18,12 +18,12 @@ podTemplate(
     envVars: [
         envVar(key: 'Dev', value: 'swashikan'),
         envVar(key: 'Dev2', value: 'lsac-dev-sch-master-test lsac-dev-sch-alpha-analytics'),
-        envVar(key: 'Dev3', value: 'swashikan Dev3'),
-        envVar(key: 'Sit', value: 'swashikan Sit'),
-        envVar(key: 'Sit2', value: 'swashikan Sit2'),
-        envVar(key: 'Sit3', value: 'swashikan Sit3'),
-        envVar(key: 'Poc', value: 'swashikan Poc'),
-        envVar(key: 'Rtest', value: 'swashikan Rtest')
+        envVar(key: 'Dev3', value: 'lsac-dev3-dh-master lsac-dev3-dh-tenants'),
+        envVar(key: 'Sit', value: 'lsac-sit-sch lsac-sit-cs-tenant'),
+        envVar(key: 'Sit2', value: 'sch-sit2-rds'),
+        envVar(key: 'Sit3', value: 'lsac-sit3-dh-master lsac-sit3-dh-tenants'),
+        envVar(key: 'Poc', value: 'dh-dev-poc'),
+        envVar(key: 'Rtest', value: 'sit-23r2-rtest-sch')
 
     ]
 ) 
