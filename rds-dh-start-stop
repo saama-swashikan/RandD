@@ -16,7 +16,7 @@ podTemplate(
         )
     ],
     envVars: [
-        envVar(key: 'Dev', value: 'swashikan'),
+        envVar(key: 'Dev', value: 'lsacone-dev-sch'),
         envVar(key: 'Dev2', value: 'lsac-dev-sch-master-test lsac-dev-sch-alpha-analytics'),
         envVar(key: 'Dev3', value: 'lsac-dev3-dh-master lsac-dev3-dh-tenants'),
         envVar(key: 'Sit', value: 'lsac-sit-sch lsac-sit-cs-tenant'),
