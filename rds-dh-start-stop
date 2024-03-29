@@ -33,7 +33,7 @@ podTemplate(
         parameters([
             choice(
             name: 'Environments', 
-            choices: ['Dev','Dev2'],
+            choices: ['Dev2'],
             description: 'Select the Environment'
             ),
             choice(
