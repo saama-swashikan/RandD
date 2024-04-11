@@ -58,7 +58,7 @@ container('sch-code-builder'){
                         credentialsId: 'aws_jenkins_dev', // Replace with your AWS credentials ID
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) { 
-                        withCredentials([string(credentialsId: 'slack-jenkins-app', variable: 'client_secret')]) {
+                        withCredentials([string(credentialsId: 'swash_jenkins_token', variable: 'client_secret')]) {
                     switch(params.Environments) {
                         case "Dev": sh "set +x; echo $Dev > rds "; break
                         case "Dev2": sh "set +x; echo $Dev2 > rds "; break
@@ -93,6 +93,7 @@ echo $client_secret
              }
         }
 }
+
 stage('Starting RDS Instances') {
 
 
@@ -197,5 +198,35 @@ container('sch-code-builder'){
              }
         }
 }
+    post {
+        failure {
+            script {
+            container('code-builder') {
+            def slackColor = currentBuild.resultIsBetterOrEqualTo('SUCCESS') ? '#00ff00' : (currentBuild.resultIsBetterOrEqualTo('FAILURE') ? '#ff0000' : '#808080')
+            // Set color to green for success, red for failure, and grey for others                           
+                sh """
+                    curl -X POST -H 'Content-type: application/json' \
+                    --data '{
+                    "text": "Build ${currentBuild.result}! Job: ${currentBuild.fullDisplayName}",
+                    "attachments": [
+                    {
+                        "color": "${slackColor}",
+                        "fields": [
+                        { "title": "Build Number", "value": "${BUILD_NUMBER}", "short": true },
+                        {"title": "Build URL", "value": "${BUILD_URL}", "short": true },
+                        { "title": "Build Status", "value": "${currentBuild.result}", "short": true },
+                        { "title": "Failed Stage", "value": "${a}", "short": true }
+
+                        ]
+                    }
+                    ]
+                }' \
+                https://hooks.slack.com/services/${fnf_slackToken}
+                """
+                }
+            }
+        }
+    }
+
 }
 }
