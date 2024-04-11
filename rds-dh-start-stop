@@ -89,7 +89,7 @@ echo $client_secret
                    '''
 def stage_name = "Status"
 if (params.Components.contains('Status') ) {
-post_to_jira(stage_name)
+post_to_jira(stage_name,status)
                             }
                     }
 }
@@ -207,7 +207,7 @@ container('sch-code-builder'){
 }
 }
 
-def post_to_jira(stage_name){
+def post_to_jira(stage_name,status){
             def slackColor = 'ff0000'
 def key = 'T06PR1W0691/B06TYATLP3L'
 def key2 = 'nsmevzvHLcTeVTiCsvnDBpSE'
