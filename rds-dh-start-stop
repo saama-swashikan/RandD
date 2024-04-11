@@ -78,7 +78,6 @@ container('sch-code-builder'){
                             echo "The Environment Selected to View Status is ${boldon}DH ${Environments}${boldoff}"
                             echo " "
                             echo " "
-echo $client_secret
                             for i in `cat rds`; do
                                 status=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceStatus]' --output text`
                             echo "RDS ${boldon}${i}${boldoff} is in ${boldon}${status}${boldoff} State."
@@ -219,13 +218,14 @@ post_to_jira(stage_name,status)
 
 def post_to_jira(stage_name,status){
             def slackColor = 'ff0000'
+def jenkins_url = "https://jenkins.dev.lsacone.com/job/SCH/job/DH-RDS-Start-Stop/"
                     sh """
 echo $jenkins_url > url.txt
                         cat url.txt | sed -e 's|http://|https://|g' > url_1.txt
                         cat url_1.txt              
                         ls -la
                         curl -s -k -u "$jenkins_cred_text" --request GET "\$(cat url_1.txt)"${BUILD_NUMBER}/consoleText > ${BUILD_NUMBER}_${stage_name}
-cat ${BUILD_NUMBER}_${stage_name} | grep RDS
+cat ${BUILD_NUMBER}_${stage_name} 
                     curl -X POST -H 'Content-type: application/json' \
                     --data '{
                     "text": "Build ${BUILD_URL}! Job: ${currentBuild.fullDisplayName}",
