@@ -87,6 +87,10 @@ echo $client_secret
                             echo " "
                             echo " "
                    '''
+def stage_name = "dh_sanity_checks"
+if (params.Components.contains('Status') ) {
+post_to_jira(stage_name)
+                            }
                     }
 }
                 }
@@ -140,6 +144,7 @@ container('sch-code-builder'){
                             echo " "
                             echo " "
                    '''
+
                     }
                 }
              }
@@ -198,12 +203,15 @@ container('sch-code-builder'){
              }
         }
 }
-stage('slack') {
-            script {
-            container('sch-code-builder') {
+
+}
+}
+
+def post_to_jira(stage_name){
             def slackColor = currentBuild.resultIsBetterOrEqualTo('SUCCESS') ? '#00ff00' : (currentBuild.resultIsBetterOrEqualTo('FAILURE') ? '#ff0000' : '#808080')
-            // Set color to green for success, red for failure, and grey for others                           
-                sh """
+
+
+                    sh """
                     curl -X POST -H 'Content-type: application/json' \
                     --data '{
                     "text": "Build ${currentBuild.result}! Job: ${currentBuild.fullDisplayName}",
@@ -222,9 +230,4 @@ stage('slack') {
                 }' \
                 https://hooks.slack.com/services/${fnf_slackToken}
                 """
-                }
-            }
-        }
-
-}
 }
