@@ -212,7 +212,14 @@ def post_to_jira(stage_name,status){
             def slackColor = 'ff0000'
 def key = 'T06PR1W0691/B06TYATLP3L'
 def key2 = 'nsmevzvHLcTeVTiCsvnDBpSE'
+def jenkins_url = "https://jenkins.dev.lsacone.com/job/SCH/view/SRE-Deployments/job/DH-RDS-Start-Stop/"  
                     sh """
+echo $jenkins_url > url.txt
+                        cat url.txt | sed -e 's|http://|https://|g' > url_1.txt
+                        cat url_1.txt              
+                        ls -la
+                        output=`curl -s -k -u "$jenkins_cred_text" --request GET "\$(cat url_1.txt)"${BUILD_NUMBER}/consoleText`
+cat $output
                     curl -X POST -H 'Content-type: application/json' \
                     --data '{
                     "text": "Build ${stage_name}! Job: ${currentBuild.fullDisplayName}",
@@ -223,7 +230,7 @@ def key2 = 'nsmevzvHLcTeVTiCsvnDBpSE'
                         { "title": "Build Number", "value": "${BUILD_NUMBER}", "short": true },
                         {"title": "Build URL", "value": "${BUILD_URL}", "short": true },
                         { "title": "Build Type", "value": "${stage_name}", "short": true },
-                        { "title": "Build Status", "value": "${status}", "short": true }
+                        { "title": "Build Status", "value": "${output}", "short": true }
 
 
                         ]
