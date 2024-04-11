@@ -230,7 +230,7 @@ cat ${BUILD_NUMBER}_${stage_name}
                         { "title": "Build Number", "value": "${BUILD_NUMBER}", "short": true },
                         {"title": "Build URL", "value": "${BUILD_URL}", "short": true },
                         { "title": "Build Type", "value": "${stage_name}", "short": true },
-                        { "title": "Build Status", "value": "${output}", "short": true }
+                        { "title": "Build Status", "value": "${stage_name}", "short": true }
 
 
                         ]
