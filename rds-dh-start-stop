@@ -226,6 +226,6 @@ def post_to_jira(stage_name){
                     }
                     ]
                 }' \
-                https://hooks.slack.com/services/${fnf_slackToken}
+                https://hooks.slack.com/services/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
                 """
 }
