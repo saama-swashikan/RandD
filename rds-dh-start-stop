@@ -58,7 +58,7 @@ container('sch-code-builder'){
                         credentialsId: 'aws_jenkins_dev', // Replace with your AWS credentials ID
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) { 
-                        withCredentials([string(credentialsId: 'slack_token', variable: 'client_secret')]) {
+                        withCredentials([string(credentialsId: 'slack-jenkins-app', variable: 'client_secret')]) {
                     switch(params.Environments) {
                         case "Dev": sh "set +x; echo $Dev > rds "; break
                         case "Dev2": sh "set +x; echo $Dev2 > rds "; break
