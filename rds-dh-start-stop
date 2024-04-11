@@ -214,7 +214,7 @@ def key2 = 'nsmevzvHLcTeVTiCsvnDBpSE'
                     sh """
                     curl -X POST -H 'Content-type: application/json' \
                     --data '{
-                    "text": "Build ${currentBuild.result}! Job: ${currentBuild.fullDisplayName}",
+                    "text": "Build ${stage_name}! Job: ${currentBuild.fullDisplayName}",
                     "attachments": [
                     {
                         "color": "${slackColor}",
@@ -222,7 +222,7 @@ def key2 = 'nsmevzvHLcTeVTiCsvnDBpSE'
                         { "title": "Build Number", "value": "${BUILD_NUMBER}", "short": true },
                         {"title": "Build URL", "value": "${BUILD_URL}", "short": true },
                         { "title": "Build Type", "value": "${stage_name}", "short": true },
-                        { "title": "Build Status", "value": "${currentBuild.result}", "short": true }
+                        { "title": "Build Status", "value": "${status}", "short": true }
 
 
                         ]
