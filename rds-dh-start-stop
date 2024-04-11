@@ -57,7 +57,8 @@ container('sch-code-builder'){
                         accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                         credentialsId: 'aws_jenkins_dev', // Replace with your AWS credentials ID
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                    ]]) {
+                    ]]) { 
+                        withCredentials([string(credentialsId: 'slack_token', variable: 'client_secret')]) {
                     switch(params.Environments) {
                         case "Dev": sh "set +x; echo $Dev > rds "; break
                         case "Dev2": sh "set +x; echo $Dev2 > rds "; break
@@ -67,7 +68,7 @@ container('sch-code-builder'){
                         case "Sit3": sh "set +x; echo $Sit3 > rds "; break
                         case "Poc": sh "set +x; echo $Poc > rds "; break
                         case "Rtest": sh "set +x; echo $Rtest > rds "; break
-                    }
+                    } 
                         sh '''
                             set +x
                             boldon=`tput smso`
@@ -77,6 +78,7 @@ container('sch-code-builder'){
                             echo "The Environment Selected to View Status is ${boldon}DH ${Environments}${boldoff}"
                             echo " "
                             echo " "
+echo $client_secret
                             for i in `cat rds`; do
                                 status=`aws rds describe-db-instances --db-instance-identifier $i --query 'DBInstances[].[DBInstanceStatus]' --output text`
                             echo "RDS ${boldon}${i}${boldoff} is in ${boldon}${status}${boldoff} State."
@@ -86,6 +88,7 @@ container('sch-code-builder'){
                             echo " "
                    '''
                     }
+}
                 }
              }
         }
