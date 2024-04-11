@@ -58,7 +58,7 @@ container('sch-code-builder'){
                         credentialsId: 'aws_jenkins_dev', // Replace with your AWS credentials ID
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) { 
-                        withCredentials([string(credentialsId: 'swash_jenkins_token', variable: 'client_secret'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {
+                        withCredentials([string(credentialsId: 'swash_jenkins_token', variable: 'client_secret'),string(credentialsId: 'swash_jenkins_token', variable: 'jenkins_cred_text')]) {
                     switch(params.Environments) {
                         case "Dev": sh "set +x; echo $Dev > rds "; break
                         case "Dev2": sh "set +x; echo $Dev2 > rds "; break
