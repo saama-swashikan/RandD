@@ -145,7 +145,11 @@ container('sch-code-builder'){
                             echo " "
                             echo " "
                    '''
-
+def stage_name = "Start"
+def status = "new"
+if (params.Components.contains('Start') ) {
+post_to_jira(stage_name,status)
+                            }
                     }
                 }
              }
@@ -199,6 +203,11 @@ container('sch-code-builder'){
                             echo " "
                             echo " "
                    '''
+def stage_name = "Stop"
+def status = "new"
+if (params.Components.contains('Stop') ) {
+post_to_jira(stage_name,status)
+                            }
                     }
                 }
              }
@@ -219,10 +228,10 @@ echo $jenkins_url > url.txt
                         cat url_1.txt              
                         ls -la
                         curl -s -k -u "$jenkins_cred_text" --request GET "\$(cat url_1.txt)"${BUILD_NUMBER}/consoleText > ${BUILD_NUMBER}_${stage_name}
-cat ${BUILD_NUMBER}_${stage_name}
+haha=`cat ${BUILD_NUMBER}_${stage_name}`
                     curl -X POST -H 'Content-type: application/json' \
                     --data '{
-                    "text": "Build ${stage_name}! Job: ${currentBuild.fullDisplayName}",
+                    "text": "Build ${haha}! Job: ${currentBuild.fullDisplayName}",
                     "attachments": [
                     {
                         "color": "${slackColor}",
