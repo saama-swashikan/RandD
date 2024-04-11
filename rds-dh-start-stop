@@ -209,7 +209,7 @@ container('sch-code-builder'){
 
 def post_to_jira(stage_name){
             def slackColor = 'ff0000'
-
+def key = 'T06PR1W0691/B06TYATLP3L'
 
                     sh """
                     curl -X POST -H 'Content-type: application/json' \
@@ -226,6 +226,6 @@ def post_to_jira(stage_name){
                     }
                     ]
                 }' \
-                https://hooks.slack.com/services/${stage_name}
+                https://hooks.slack.com/services/${key}/${stage_name}
                 """
 }
