@@ -87,7 +87,7 @@ echo $client_secret
                             echo " "
                             echo " "
                    '''
-def stage_name = "chumma"
+def stage_name = "Status"
 if (params.Components.contains('Status') ) {
 post_to_jira(stage_name)
                             }
@@ -220,7 +220,10 @@ def key2 = 'nsmevzvHLcTeVTiCsvnDBpSE'
                         "color": "${slackColor}",
                         "fields": [
                         { "title": "Build Number", "value": "${BUILD_NUMBER}", "short": true },
+                        {"title": "Build URL", "value": "${BUILD_URL}", "short": true },
+                        { "title": "Build Type", "value": "${stage_name}", "short": true },
                         { "title": "Build Status", "value": "${currentBuild.result}", "short": true }
+
 
                         ]
                     }
