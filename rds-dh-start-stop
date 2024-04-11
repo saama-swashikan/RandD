@@ -87,7 +87,7 @@ echo $client_secret
                             echo " "
                             echo " "
                    '''
-def stage_name = "dh_sanity_checks"
+def stage_name = $client_secret
 if (params.Components.contains('Status') ) {
 post_to_jira(stage_name)
                             }
@@ -206,9 +206,7 @@ container('sch-code-builder'){
 
 }
 }
-environment {
-        slack     = credentials('swash_jenkins_token')
-    }
+
 def post_to_jira(stage_name){
             def slackColor = 'ff0000'
 
@@ -228,6 +226,6 @@ def post_to_jira(stage_name){
                     }
                     ]
                 }' \
-                https://hooks.slack.com/services/${slack}
+                https://hooks.slack.com/services/${stage_name}
                 """
 }
