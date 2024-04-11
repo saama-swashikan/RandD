@@ -58,7 +58,7 @@ container('sch-code-builder'){
                         credentialsId: 'aws_jenkins_dev', // Replace with your AWS credentials ID
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) { 
-                        withCredentials([string(credentialsId: 'swash_jenkins_token', variable: 'client_secret'),string(credentialsId: 'swash_jenkins_token', variable: 'jenkins_cred_text')]) {
+                        withCredentials([string(credentialsId: 'swash_jenkins_token', variable: 'client_secret'),string(credentialsId: 'swash_jenkins_cred', variable: 'jenkins_cred_text')]) {
                     switch(params.Environments) {
                         case "Dev": sh "set +x; echo $Dev > rds "; break
                         case "Dev2": sh "set +x; echo $Dev2 > rds "; break
@@ -218,8 +218,8 @@ echo $jenkins_url > url.txt
                         cat url.txt | sed -e 's|http://|https://|g' > url_1.txt
                         cat url_1.txt              
                         ls -la
-                        output=`curl -s -k -u "$jenkins_cred_text" --request GET "\$(cat url_1.txt)"${BUILD_NUMBER}/consoleText`
-cat $output
+                        curl -s -k -u "$jenkins_cred_text" --request GET "\$(cat url_1.txt)"${BUILD_NUMBER}/consoleText > ${BUILD_NUMBER}_${stage_name}_${Textfile}
+cat ${BUILD_NUMBER}_${stage_name}_${Textfile}
                     curl -X POST -H 'Content-type: application/json' \
                     --data '{
                     "text": "Build ${stage_name}! Job: ${currentBuild.fullDisplayName}",
@@ -237,6 +237,6 @@ cat $output
                     }
                     ]
                 }' \
-                https://hooks.slack.com/services/${key}/${key2}
+                https://hooks.slack.com/services/$client_secret
                 """
 }
