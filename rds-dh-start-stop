@@ -219,19 +219,16 @@ post_to_jira(stage_name,status)
 
 def post_to_jira(stage_name,status){
             def slackColor = 'ff0000'
-def key = 'T06PR1W0691/B06TYATLP3L'
-def key2 = 'nsmevzvHLcTeVTiCsvnDBpSE'
-def jenkins_url = "https://jenkins.dev.lsacone.com/job/SCH/view/SRE-Deployments/job/DH-RDS-Start-Stop/"  
                     sh """
 echo $jenkins_url > url.txt
                         cat url.txt | sed -e 's|http://|https://|g' > url_1.txt
                         cat url_1.txt              
                         ls -la
                         curl -s -k -u "$jenkins_cred_text" --request GET "\$(cat url_1.txt)"${BUILD_NUMBER}/consoleText > ${BUILD_NUMBER}_${stage_name}
-export haha=`cat ${BUILD_NUMBER}_${stage_name}`
+cat ${BUILD_NUMBER}_${stage_name} | grep RDS
                     curl -X POST -H 'Content-type: application/json' \
                     --data '{
-                    "text": "Build ${haha}! Job: ${currentBuild.fullDisplayName}",
+                    "text": "Build ${BUILD_URL}! Job: ${currentBuild.fullDisplayName}",
                     "attachments": [
                     {
                         "color": "${slackColor}",
