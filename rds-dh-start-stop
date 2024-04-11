@@ -198,10 +198,9 @@ container('sch-code-builder'){
              }
         }
 }
-    post {
-        failure {
+stage('slack') {
             script {
-            container('code-builder') {
+            container('sch-code-builder') {
             def slackColor = currentBuild.resultIsBetterOrEqualTo('SUCCESS') ? '#00ff00' : (currentBuild.resultIsBetterOrEqualTo('FAILURE') ? '#ff0000' : '#808080')
             // Set color to green for success, red for failure, and grey for others                           
                 sh """
@@ -226,7 +225,6 @@ container('sch-code-builder'){
                 }
             }
         }
-    }
 
 }
 }
