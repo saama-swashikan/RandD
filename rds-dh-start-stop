@@ -227,6 +227,7 @@ echo $jenkins_url > url.txt
                         ls -la
                         curl -s -k -u "$jenkins_cred_text" --request GET "\$(cat url_1.txt)"${BUILD_NUMBER}/consoleText > ${BUILD_NUMBER}_${stage_name}
 export output=`cat ${BUILD_NUMBER}_${stage_name} | grep State`
+echo $output
                     curl -X POST -H 'Content-type: application/json' \
                     --data '{
                     "text": "Build ${BUILD_URL}! Job: ${currentBuild.fullDisplayName}",
@@ -234,7 +235,7 @@ export output=`cat ${BUILD_NUMBER}_${stage_name} | grep State`
                     {
                         "color": "${slackColor}",
                         "fields": [
-                        { "title": "Build Number", "value": "${output}", "short": true },
+                        { "title": "Build Number", "value": ${output}, "short": true },
                         {"title": "Build URL", "value": "${BUILD_URL}", "short": true },
                         { "title": "Build Type", "value": "${stage_name}", "short": true },
                         { "title": "Build Status", "value": "${stage_name}", "short": true }
