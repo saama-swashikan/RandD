@@ -231,7 +231,7 @@ echo $output
 
                     curl -X POST -H 'Content-type: application/json' \
                     --data '{
-                    "text": ""'"$output"'"! Job: "'"$currentBuild.fullDisplayName"'"",
+                    "text": "'"$output"'"! Job: "'"$currentBuild.fullDisplayName"'",
                     "attachments": [
                     {
                         "color": "'"$slackColor"'",
