@@ -217,7 +217,8 @@ post_to_jira(stage_name,status)
 }
 
 def post_to_jira(stage_name,status){
-
+            def slackColor = 'ff0000'
+def jenkins_url = "https://jenkins.dev.lsacone.com/job/SCH/job/DH-RDS-Start-Stop/"
                     sh '''
 export slackColor='ff0000'
 export jenkins_url="https://jenkins.dev.lsacone.com/job/SCH/job/DH-RDS-Start-Stop/"
