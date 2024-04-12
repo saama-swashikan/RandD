@@ -232,7 +232,7 @@ export fast="new is fine"
 
 curl -X POST -H 'Content-type: application/json' \
                     --data '{
-                    "text": "'"$OUTPUT"'!",
+                    "text": "'"$fast"'!",
                     "attachments": [
                     {
                         "color": "'"$slackColor"'",
