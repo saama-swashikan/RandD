@@ -231,14 +231,14 @@ echo $output
 
                     curl -X POST -H 'Content-type: application/json' \
                     --data '{
-                    "text": "'"$output"'! Job: '"$currentBuild.fullDisplayName"'",
+                    "text": ""'"$output"'"! Job: "'"$currentBuild.fullDisplayName"'"",
                     "attachments": [
                     {
-                        "color": '"$slackColor"',
+                        "color": "'"$slackColor"'",
                         "fields": [
-                        { "title": "Build Number", "value": '"$BUILD_NUMBER"', "short": true },
-                        {"title": "Build URL", "value": '"$BUILD_URL"', "short": true },
-                        { "title": "Build Type", "value": '"$stage_name"', "short": true },
+                        { "title": "Build Number", "value": "'"$BUILD_NUMBER"'", "short": true },
+                        {"title": "Build URL", "value": "'"$BUILD_URL"'", "short": true },
+                        { "title": "Build Type", "value": "'"$stage_name"'", "short": true },
                         { "title": "Build Status", "value": "'"$BUILD_URL"'", "short": true }
 
 
