@@ -231,7 +231,7 @@ echo $output
 
                     curl -X POST -H 'Content-type: application/json' \
                     --data '{
-                    "text": "'"$output"'!"
+                    "text": "hello!"
                 }' \
                 https://hooks.slack.com/services/$client_secret
                 '''
