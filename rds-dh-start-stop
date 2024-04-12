@@ -239,7 +239,7 @@ echo $output
                         { "title": "Build Number", "value": '"$BUILD_NUMBER"', "short": true },
                         {"title": "Build URL", "value": '"$BUILD_URL"', "short": true },
                         { "title": "Build Type", "value": '"$stage_name"', "short": true },
-                        { "title": "Build Status", "value": '"$BUILD_URL"', "short": true }
+                        { "title": "Build Status", "value": "'"$BUILD_URL"'", "short": true }
 
 
                         ]
