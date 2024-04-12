@@ -219,7 +219,7 @@ post_to_jira(stage_name,status)
 def post_to_jira(stage_name,status){
             def slackColor = 'ff0000'
 def jenkins_url = "https://jenkins.dev.lsacone.com/job/SCH/job/DH-RDS-Start-Stop/"
-                    sh """
+                    sh '''
 echo $jenkins_url > url.txt
                         cat url.txt | sed -e 's|http://|https://|g' > url_1.txt
                         cat url_1.txt              
@@ -244,5 +244,5 @@ cat ${BUILD_NUMBER}_${stage_name} | grep State
                     ]
                 }' \
                 https://hooks.slack.com/services/$client_secret
-                """
+                '''
 }
