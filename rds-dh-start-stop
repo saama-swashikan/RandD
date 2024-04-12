@@ -239,7 +239,7 @@ curl -X POST -H 'Content-type: application/json' \
                         { "title": "Build Number", "value": "'"$BUILD_NUMBER"'", "short": true },
                         {"title": "Build URL", "value": "'"$BUILD_URL"'", "short": true },
                         { "title": "Build Type", "value": "'"$BUILD_NUMBER"'", "short": true },
-                        { "title": "Build Status", "value": "'"$OUTPUT"'", "short": true }
+                        { "title": "Build Status", "value": "'$OUTPUT'", "short": true }
 
 
                         ]
