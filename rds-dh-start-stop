@@ -229,9 +229,11 @@ echo $jenkins_url > url.txt
                         curl -s -k -u "$jenkins_cred_text" --request GET "\$(cat url_1.txt)"${BUILD_NUMBER}/consoleText > ${BUILD_NUMBER}_${stage_name}
 export output=`cat ${BUILD_NUMBER}_${stage_name} | grep State`
 echo $output
-curl -X POST \
-    -H 'Content-type: application/json; charset=utf-8' \
-    --data '{ "channel": "#mychannel", "username": "superbot", "icon_emoji": ":bot:", "text": "Foo" }' \
+curl \
+--variable %output \
+-X POST \
+    -H 'Content-type: application/json' \
+    --data '{ "text": "{{output}}" }' \
     https://hooks.slack.com/services/$client_secret
 
                     curl -X POST -H 'Content-type: application/json' \
