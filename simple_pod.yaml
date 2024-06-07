@@ -4,7 +4,6 @@ metadata:
   labels:
     app: test-pod
   name: test-pod
-  namespace: default
 spec:
   containers:
     - command:
