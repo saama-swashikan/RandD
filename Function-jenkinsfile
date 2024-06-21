@@ -151,8 +151,7 @@ podTemplate(
                         withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
                                 def image_name = sh(script: '''
                                 for i in `cat ecr_image.txt`; do 
-                                    cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2 > new
-                                    echo $new
+                                    cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2
                                 done
                                 ''', returnStdout: true).trim()
                                 echo $image_name
