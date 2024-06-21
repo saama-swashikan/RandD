@@ -143,14 +143,14 @@ podTemplate(
                     container('sch-code-builder'){
                     // Stage 1: Pull Docker image using AWS credentials
                         switch(params.Components) {
-                            case "ApiDB": sh "echo api_db > ecr_image"; break
-                            case "Automaps-Inference-Image": sh "echo automap_inference_image > ecr_image"; break
-                            case "Outbound": sh "echo outbound_tag > ecr_image"; break
+                            case "ApiDB": sh "echo api_db > ecr_image.txt"; break
+                            case "Automaps-Inference-Image": sh "echo automap_inference_image > ecr_image.txt"; break
+                            case "Outbound": sh "echo outbound_tag > ecr_image.txt"; break
 
                         }
                         withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
                                 def image_name = sh(script: '''
-                                for i in `cat ecr_image`; do 
+                                for i in `cat ecr_image.txt`; do 
                                     cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2 > new
                                     echo $new
                                 done
@@ -160,7 +160,7 @@ podTemplate(
                         }   
                         withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {  
                                 def image_name = sh(script: '''
-                                for i in `cat ecr_image`; do 
+                                for i in `cat ecr_image.txt`; do 
                                     cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2;  
                                 done
                                 ''', returnStdout: true).trim()
