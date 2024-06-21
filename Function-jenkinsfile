@@ -143,9 +143,9 @@ podTemplate(
                     container('sch-code-builder'){
                     // Stage 1: Pull Docker image using AWS credentials
                         switch(params.Components) {
-                            case "ApiDB": sh "set +x; echo api_db > ecr_image"; break
-                            case "Automaps-Inference-Image": sh "set +x; echo automap_inference_image > ecr_image"; break
-                            case "Outbound": sh "set +x; echo outbound_tag > ecr_image"; break
+                            case "ApiDB": sh "echo api_db > ecr_image"; break
+                            case "Automaps-Inference-Image": sh "echo automap_inference_image > ecr_image"; break
+                            case "Outbound": sh "echo outbound_tag > ecr_image"; break
 
                         }
                         withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
