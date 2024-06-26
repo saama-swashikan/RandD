@@ -100,12 +100,10 @@ podTemplate(
 sh '''
                                 cat uploaded_file.txt
                                 export $(cat uploaded_file.txt)
-cat uploaded_file.txt | grep ^api_db= | cut -d'=' -f2; 
-export 
+cat uploaded_file.txt | grep ^api_db= | cut -d'=' -f2;  
 '''
                                 def image_name = sh(script: '''
-echo $api_db
-                                        i=api_db
+env                                        i=api_db
                                         cat uploaded_file.txt | grep ^api_db= | cut -d'=' -f2; 
                                 ''', returnStdout: true).trim()
                                 echo $image_name
