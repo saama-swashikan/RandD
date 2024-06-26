@@ -150,7 +150,7 @@ echo "$date"
   sh """
     aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
     aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
-    if grep -w "$image_name" image_tag.txt; 
+    if grep -q "$image_name" image_tag.txt; 
     then 
         aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
         podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image_name
