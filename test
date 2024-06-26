@@ -1021,56 +1021,6 @@ podTemplate(
                 }
             }
         }
-        stage('Pull and Push Automaps Inference image') {
-            script {
-                if (params.Components.contains('Automaps-Inference-Image') && currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
-                    container('sch-code-builder'){
-                    // Stage 1: Pull Docker image using AWS credentials
-                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
-                            sh '''
-                                cat uploaded_file.txt
-                                export $(cat uploaded_file.txt)    
-                                image=$automap_inference_image
-                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
-                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
-                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
-                            '''
-                        }
-                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
-                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {      
-                                sh '''
-                                    cat uploaded_file.txt
-                                    export $(cat uploaded_file.txt)
-                                    image=$automap_inference_image
-                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
-                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
-                                    if grep -w $image image_tag.txt; 
-                                    then 
-                                        export date=$(date +%Y_%m_%d-%H%M)
-                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
-                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
-                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
-                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
-                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
-                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
-                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
-                                    else
-                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
-                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
-                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
-                                        podman image prune --all --force
-                                    fi     
-                                '''
-                                def stage_name = "Image_Migration_Automaps_Inference"
-                                if (params.jira_comment == "yes") {
-                                    post_to_jira(stage_name)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
         stage('Pull and Push OutBound image') {
             script {
                 if (params.Components.contains('Outbound')) {
