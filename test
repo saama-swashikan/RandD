@@ -103,11 +103,7 @@ sh '''
 cat uploaded_file.txt | grep ^api_db= | cut -d'=' -f2;  
 '''
 sh 'cat uploaded_file.txt; export $(cat uploaded_file.txt)'
-                                def image = sh(script: '''
-env                                      
-i=api_db
-                                        cat uploaded_file.txt | grep ^api_db= | cut -d'=' -f2; 
-                                ''', returnStdout: true).trim()
+
                                 def image_name = sh(script: '''
 echo "db-api-4.0"
                                 ''', returnStdout: true).trim()
