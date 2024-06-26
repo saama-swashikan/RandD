@@ -102,6 +102,7 @@ sh '''
                                 export $(cat uploaded_file.txt)
 cat uploaded_file.txt | grep ^api_db= | cut -d'=' -f2;  
 '''
+sh 'cat uploaded_file.txt; export $(cat uploaded_file.txt)'
                                 def image_name = sh(script: '''
 env                                        i=api_db
                                         cat uploaded_file.txt | grep ^api_db= | cut -d'=' -f2; 
