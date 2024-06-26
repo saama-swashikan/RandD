@@ -123,7 +123,7 @@ podTemplate(
         }  
         stage('Pull and Push API DB image') {
             script {
-                if ( params.Components.contains('ApiDB') || params.Components.contains('Automaps-Inference-Image') ) {
+                if ( params.Components.contains('ApiDB') ) {
                     container('sch-code-builder'){
                     // Stage 1: Pull Docker image using AWS credentials
                         withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
