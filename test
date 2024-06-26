@@ -99,15 +99,14 @@ podTemplate(
                         withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
 
                                 def image_name = sh(script: '''
-                                        cat uploaded_file.txt | grep ^api_db= | cut -d'=' -f2; 
+                                        i=redis; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
                                 ''', returnStdout: true).trim()
 
                                 pull_image(image_name)  
                         }   
                         withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {  
                                 def image_name = sh(script: '''
-                                        i=api_db
-                                        cat uploaded_file.txt | grep ^api_db= | cut -d'=' -f2; 
+                                        i=redis; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
                                 ''', returnStdout: true).trim()
 
                                 def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
