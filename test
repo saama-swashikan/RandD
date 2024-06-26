@@ -9,54 +9,6 @@ podTemplate(
             ttyEnabled: true,
             resourceLimitEphemeralStorage: '10Gi',
             resourceLimitMemory: '16Gi'
-        ),
-        containerTemplate(
-            name: 'sch-automapper',
-            image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-build-agent:git',
-            command: 'cat',
-            ttyEnabled: true,
-            resourceLimitEphemeralStorage: '5Gi',
-            resourceLimitMemory: '8Gi'
-        ),
-        containerTemplate(
-            name: 'sch-image-builder',
-            image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-build-agent:kaniko-with-aws',
-            command: 'cat',
-            ttyEnabled: true,
-            resourceLimitEphemeralStorage: '5Gi',
-            resourceLimitMemory: '8Gi'
-        ),
-        containerTemplate(
-            name: 'terragrunt-build',
-            image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-build-agent:terragrunt-always-latest',
-            command: 'cat',
-            ttyEnabled: true,
-            resourceLimitEphemeralStorage: '5Gi',
-            resourceLimitMemory: '8Gi'
-        ),
-        containerTemplate(
-            name: 'migration-script',
-            image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-apps:migration-23r2',
-            command: 'cat',
-            ttyEnabled: true,
-            resourceLimitEphemeralStorage: '5Gi',
-            resourceLimitMemory: '8Gi'
-        ),
-        containerTemplate(
-            name: 'sch-sanity-executor',
-            image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-build-agent:sanity_git',
-            command: 'cat',
-            ttyEnabled: true,
-            resourceLimitEphemeralStorage: '5Gi',
-            resourceLimitMemory: '8Gi'
-        ),
-        containerTemplate(
-            name: 'sch-code-builder-git',
-            image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/lsac-platform:ubuntu_4_gh',
-            command: 'cat',
-            ttyEnabled: true,
-            resourceLimitEphemeralStorage: '5Gi',
-            resourceLimitMemory: '4Gi'
         )
     ],
     volumes: [
