@@ -101,15 +101,17 @@ podTemplate(
                                 def image_name = sh(script: '''
 echo "db-api-4.0"
                                 ''', returnStdout: true).trim()
-                                pull_image(redis-4.0)  
+def stage_name = "redis-4.0"
+                                pull_image(stage_name)  
                         }   
                         withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {  
                                 def image_name = sh(script: '''
                                         i=api_db
                                         cat uploaded_file.txt | grep ^api_db= | cut -d'=' -f2; 
                                 ''', returnStdout: true).trim()
+def stage_name = "redis-4.0"
                                 def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
-                                push_image(redis-4.0,date)
+                                push_image(stage_name,date)
                         }
                     }
             }
