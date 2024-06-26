@@ -132,7 +132,7 @@ podTemplate(
                                         i=api_db
                                         cat uploaded_file.txt | grep ^$i=
                                     '''
-                                    echo $image_name
+
                                     pull_image(image_name)
                                 }
                                 if ( params.Components.contains('Automaps-Inference-Image') ) {
@@ -140,7 +140,6 @@ podTemplate(
                                         i=automap_inference_image
                                         cat uploaded_file.txt | grep ^$i=
                                     '''
-                                    echo $image_name
                                     pull_image(image_name) 
                                 }
                         }
@@ -151,7 +150,6 @@ podTemplate(
                                         i=api_db
                                         cat uploaded_file.txt | grep ^$i=
                                     '''
-                                    echo $image_name
                                     def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
                                     push_image(image_name,date)
                                 }
@@ -160,7 +158,6 @@ podTemplate(
                                         i=automap_inference_image
                                         cat uploaded_file.txt | grep ^$i=
                                     '''
-                                    echo $image_name
                                     def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
                                     push_image(image_name,date)
                                 }
