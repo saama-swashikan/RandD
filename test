@@ -60,7 +60,10 @@ podTemplate(
                            groovyScript: '''
                 return ['PreRequisites', 'ApiDB', 'Docs', 'Redis', 'Aws-Cli-Unzip', 'SysAdmin', 'StudyAdmin', 'Python', 'Pyspark', 'PdaGateway', 'Transform', 'TransformApi', 'RawThirdParty', 'PdaDb', 'DQ', 'PdaHome', 'PdaNotifications', 'StudyTransform', 'Scale', 'Automaps-Inference-Image', 'Outbound', 'TerragruntApply', 'RedisRestart', 'init-all-api-Trigger', 'AutoMapper', 'GlobalFiles','OTB','Automaps-Inference-S3-Upload','dh-sanity-checks']
            '''
-            )
+            ),
+            string(name: 'JiraIssueKey', defaultValue: 'SRE-9866', description: 'Enter Jira Ticket ID, eg: SRE-9866'),
+            string(name: 'jira_comment', defaultValue: 'yes', description: 'Jira comment required or not, eg: yes/no'),
+            string(name: 'jenkins_url', defaultValue: 'https://jenkins.dev.lsacone.com/job/SCH/job/DH-SIT3/', description: 'Jenkins job url, eg: https://jenkins.dev.lsacone.com/job/SCH/job/DH-SIT3/')
         ])
     ])
     node(POD_LABEL) {
@@ -92,46 +95,361 @@ podTemplate(
        
         stage('Pull and Push Redis and SysAdmin image') {
             script {
-                if ( params.Components.contains('Redis') || params.Components.contains('SysAdmin') ) {
+                if ( params.Components.contains('ApiDB') || params.Components.contains('Docs') || params.Components.contains('Redis') || params.Components.contains('SysAdmin') || params.Components.contains('StudyAdmin') || params.Components.contains('Python') || params.Components.contains('Pyspark') || params.Components.contains('PdaGateway') || params.Components.contains('Transform') || params.Components.contains('TransformApi') || params.Components.contains('RawThirdParty') || params.Components.contains('PdaDb') || params.Components.contains('DQ') || params.Components.contains('PdaHome') || params.Components.contains('PdaNotifications') || params.Components.contains('StudyTransform') || params.Components.contains('Scale') || params.Components.contains('Automaps-Inference-Image') || params.Components.contains('Outbound') || params.Components.contains('Migration-image') ) {
                     container('sch-code-builder'){
                     // Stage 1: Pull Docker image using AWS credentials
 
                         withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            if ( params.Components.contains('ApiDB') ) {
+                                def image_name = sh(script: '''
+                                    i=api_db; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                pull_image(image_name)  
+                            }
+                            if ( params.Components.contains('Docs') ) {
+                                def image_name = sh(script: '''
+                                    i=docs; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                pull_image(image_name)  
+                            }
                             if ( params.Components.contains('Redis') ) {
                                 def image_name = sh(script: '''
-                                        i=redis; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    i=redis; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
                                 ''', returnStdout: true).trim()
                                 pull_image(image_name)  
                             }
                             if ( params.Components.contains('SysAdmin') ) {
                                 def image_name = sh(script: '''
-                                        i=sys_tag; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    i=sys_tag; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
                                 ''', returnStdout: true).trim()
                                 pull_image(image_name)  
                             }
-                        }   
-                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
-                            if ( params.Components.contains('Redis') ) {
+                            if ( params.Components.contains('StudyAdmin') ) {
                                 def image_name = sh(script: '''
-                                        i=redis; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    i=study_tag; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
                                 ''', returnStdout: true).trim()
-                                def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
-                                push_image(image_name,date)
+                                pull_image(image_name)  
                             }
-                            if ( params.Components.contains('SysAdmin') ) {
+                            if ( params.Components.contains('Python') ) {
                                 def image_name = sh(script: '''
-                                        i=sys_tag; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    i=python_image; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
                                 ''', returnStdout: true).trim()
-                                def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
-                                push_image(image_name,date)
+                                pull_image(image_name)  
                             }
+                            if ( params.Components.contains('Pyspark') ) {
+                                def image_name = sh(script: '''
+                                    i=pyspark_image; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                pull_image(image_name)  
+                            }
+                            if ( params.Components.contains('PdaGateway') ) {
+                                def image_name = sh(script: '''
+                                    i=gateway_tag; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                pull_image(image_name)  
+                            }
+                            if ( params.Components.contains('Transform') ) {
+                                def image_name = sh(script: '''
+                                    i=sch_unified_cm; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                pull_image(image_name)  
+                            }
+                            if ( params.Components.contains('TransformApi') ) {
+                                def image_name = sh(script: '''
+                                    i=map_preview; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                pull_image(image_name)  
+                            }
+                            if ( params.Components.contains('RawThirdParty') ) {
+                                def image_name = sh(script: '''
+                                    i=raw_thirdparty_tag; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                pull_image(image_name)  
+                            }
+                            if ( params.Components.contains('PdaDb') ) {
+                                def image_name = sh(script: '''
+                                    i=db_admin; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                pull_image(image_name)  
+                            }
+                            if ( params.Components.contains('DQ') ) {
+                                def image_name = sh(script: '''
+                                    i=dq; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                pull_image(image_name)  
+                            }
+                            if ( params.Components.contains('PdaHome') ) {
+                                def image_name = sh(script: '''
+                                    i=home; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                pull_image(image_name)  
+                            }
+                            if ( params.Components.contains('PdaNotifications') ) {
+                                def image_name = sh(script: '''
+                                    i=notification; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                pull_image(image_name)  
+                            }
+                            if ( params.Components.contains('StudyTransform') ) {
+                                def image_name = sh(script: '''
+                                    i=transform; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                pull_image(image_name)  
+                            }
+                            if ( params.Components.contains('Scale') ) {
+                                def image_name = sh(script: '''
+                                    i=dynamicdag; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                pull_image(image_name)  
+                            }
+                            if ( params.Components.contains('Automaps-Inference-Image') ) {
+                                def image_name = sh(script: '''
+                                    i=automap_inference_image; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                pull_image(image_name)  
+                            }
+                            if ( params.Components.contains('Outbound') ) {
+                                def image_name = sh(script: '''
+                                    i=outbound_tag; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                pull_image(image_name)  
+                            }
+                            if ( params.Components.contains('Migration-image') ) {
+                                def image_name = sh(script: '''
+                                    i=migration_image; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                pull_image(image_name)  
+                            }
+                        }
 
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {      
+                                if ( params.Components.contains('ApiDB') ) {
+                                    def image_name = sh(script: '''
+                                        i=api_db; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_API_DB"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                                if ( params.Components.contains('Docs') ) {
+                                    def image_name = sh(script: '''
+                                        i=docs; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_Docs"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                                if ( params.Components.contains('Redis') ) {
+                                    def image_name = sh(script: '''
+                                        i=redis; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_Redis"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                                if ( params.Components.contains('SysAdmin') ) {
+                                    def image_name = sh(script: '''
+                                        i=sys_tag; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_SYS"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                                if ( params.Components.contains('StudyAdmin') ) {
+                                    def image_name = sh(script: '''
+                                        i=study_tag; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_Study"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                                if ( params.Components.contains('Python') ) {
+                                    def image_name = sh(script: '''
+                                        i=python_image; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_Python"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                                if ( params.Components.contains('Pyspark') ) {
+                                    def image_name = sh(script: '''
+                                        i=pyspark_image; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_PySpark"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                                if ( params.Components.contains('PdaGateway') ) {
+                                    def image_name = sh(script: '''
+                                        i=gateway_tag; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_PdaGateway"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                                if ( params.Components.contains('Transform') ) {
+                                    def image_name = sh(script: '''
+                                        i=sch_unified_cm; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_Transform"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                                if ( params.Components.contains('TransformApi') ) {
+                                    def image_name = sh(script: '''
+                                        i=map_preview; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_TransformApi"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                                if ( params.Components.contains('RawThirdParty') ) {
+                                    def image_name = sh(script: '''
+                                        i=raw_thirdparty_tag; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_RawThirdParty"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                                if ( params.Components.contains('PdaDb') ) {
+                                    def image_name = sh(script: '''
+                                        i=db_admin; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_PdaDB"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                                if ( params.Components.contains('DQ') ) {
+                                    def image_name = sh(script: '''
+                                        i=dq; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_DQ"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                                if ( params.Components.contains('PdaHome') ) {
+                                    def image_name = sh(script: '''
+                                        i=home; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_PdaHome"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                                if ( params.Components.contains('PdaNotifications') ) {
+                                    def image_name = sh(script: '''
+                                        i=notification; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_PdaNotifications"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                                if ( params.Components.contains('StudyTransform') ) {
+                                    def image_name = sh(script: '''
+                                        i=transform; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_StudyTransform"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                                if ( params.Components.contains('Scale') ) {
+                                    def image_name = sh(script: '''
+                                        i=dynamicdag; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_Scale"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                                if ( params.Components.contains('Automaps-Inference-Image') ) {
+                                    def image_name = sh(script: '''
+                                        i=automap_inference_image; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_Automaps_Inference"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                                if ( params.Components.contains('Outbound') ) {
+                                    def image_name = sh(script: '''
+                                        i=outbound_tag; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_OutBound"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                                if ( params.Components.contains('Migration-image') ) {
+                                    def image_name = sh(script: '''
+                                        i=migration_image; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_Migration"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                            }
                         }
                     }
+                }
             }
         }
-}
-       
     }   
 }
 
@@ -168,3 +486,33 @@ echo "$date"
   """
 
 }
+
+def post_to_jira(stage_name){
+
+  def jira_name = "${jira_names}"
+                    def jenkins_url = "${params.jenkins_url}"                    
+                    echo "$jira_name"
+                    echo "$jenkins_url"
+                    echo "$stage_name"
+                    echo "url: ${jenkins_url}"
+
+                    sh """
+                        echo sh_jira: $jira_name
+                        #jenkins_url="\$(echo $jenkins_url | sed -e 's|http://|https://|g')"
+                        echo $jenkins_url > url.txt
+                        cat url.txt | sed -e 's|http://|https://|g' > url_1.txt
+                        cat url_1.txt              
+                        ls -la
+                        curl -s -k -u "$jenkins_cred_text" --request GET "\$(cat url_1.txt)"${BUILD_NUMBER}/consoleText > ${BUILD_NUMBER}_${stage_name}_${Textfile}
+                        # echo "curl -s -k -u "\$(cat test.txt)" --request GET ${jenkins_url}${BUILD_NUMBER}/consoleText > ${BUILD_NUMBER}_${stage_name}_${Textfile}"
+                        #curl -s -k -u "\$(cat test.txt)" --request GET ${jenkins_url}${BUILD_NUMBER}/consoleText > ${BUILD_NUMBER}_${stage_name}_${Textfile}
+                        echo hi
+                        ls -la
+                    """
+                    
+                    def attachment = jiraUploadAttachment idOrKey: "${params.JiraIssueKey}", file: "${BUILD_NUMBER}_${stage_name}_${Textfile}", site: "${jira_name}"
+                    def commentBody = "${stage_name} stage completed. \n Log attached for the reference. \n Filename is *${BUILD_NUMBER}_${stage_name}_${Textfile}* \n Build_details: ${params.jenkins_url}"
+                    def commentWithAttachment = jiraAddComment comment: commentBody, idOrKey: "${params.JiraIssueKey}", attachments: [attachment], site: "${jira_name}"
+                    echo commentWithAttachment.data.toString()
+}
+
