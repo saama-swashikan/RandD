@@ -123,20 +123,30 @@ podTemplate(
         }  
         stage('Pull and Push API DB image') {
             script {
-                if ( params.Components.contains('ApiDB') ) {
+                if ( params.Components.contains('ApiDB') || params.Components.contains('Automaps-Inference-Image') ) {
                     container('sch-code-builder'){
                     // Stage 1: Pull Docker image using AWS credentials
                         withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                                if ( params.Components.contains('ApiDB') ) {
                                     def image_name = sh(script: '''
                                         i=api_db
                                         cat uploaded_file.txt | grep ^$i=
                                     '''
                                     echo $image_name
                                     pull_image(image_name)
-
+                                }
+                                if ( params.Components.contains('Automaps-Inference-Image') ) {
+                                    def image_name = sh(script: '''
+                                        i=automap_inference_image
+                                        cat uploaded_file.txt | grep ^$i=
+                                    '''
+                                    echo $image_name
+                                    pull_image(image_name) 
+                                }
                         }
                         withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
                             withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {  
+                                if ( params.Components.contains('ApiDB') ) {
                                     def image_name = sh(script: '''
                                         i=api_db
                                         cat uploaded_file.txt | grep ^$i=
@@ -144,6 +154,16 @@ podTemplate(
                                     echo $image_name
                                     def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
                                     push_image(image_name,date)
+                                }
+                                if ( params.Components.contains('Automaps-Inference-Image') ) {
+                                    def image_name = sh(script: '''
+                                        i=automap_inference_image
+                                        cat uploaded_file.txt | grep ^$i=
+                                    '''
+                                    echo $image_name
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                }
                                 def stage_name = "Image_Migration_API_DB"
                                 if (params.jira_comment == "yes") {
                                     post_to_jira(stage_name)
@@ -1544,6 +1564,7 @@ echo "$date"
   """
 
 }
+
 def post_to_jira(stage_name){
 
   def jira_name = "${jira_names}"
