@@ -1,0 +1,1609 @@
+podTemplate(
+    containers: [
+        containerTemplate(
+            name: 'sch-code-builder',
+            image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-build-agent:sch-sit2-terragrunt',
+            command: 'cat',
+            ttyEnabled: true,
+            resourceLimitEphemeralStorage: '10Gi',
+            resourceLimitMemory: '16Gi'
+        ),
+        containerTemplate(
+            name: 'terragrunt-build',
+            image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-build-agent:terragrunt-always-latest',
+            command: 'cat',
+            ttyEnabled: true,
+            resourceLimitEphemeralStorage: '5Gi',
+            resourceLimitMemory: '8Gi'
+        ),
+        containerTemplate(
+            name: 'sch-sanity-executor',
+            image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-build-agent:sanity_git',
+            command: 'cat',
+            ttyEnabled: true,
+            resourceLimitEphemeralStorage: '5Gi',
+            resourceLimitMemory: '8Gi'
+        ),
+        containerTemplate(
+            name: 'sch-code-builder-git',
+            image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/lsac-platform:ubuntu_4_gh',
+            command: 'cat',
+            ttyEnabled: true,
+            resourceLimitEphemeralStorage: '5Gi',
+            resourceLimitMemory: '4Gi'
+        )
+    ],
+    volumes: [
+        dynamicPVC(
+            requestsSize : '500Gi',
+            mountPath: '/var/lib/containers/storage/vfs'
+        )
+    ],
+    envVars: [
+        envVar(key: 'source_aws_account', value: '791532114280'),
+        envVar(key: 'dest_aws_account', value: '791532114280'),
+        envVar(key: 'source_aws_repo', value: 'sch-dev2-apps'),
+        envVar(key: 'dest_aws_repo', value: 'dh-sit3'),
+        envVar(key: 'fnf_url', value: 'signin.sit3.lsacone.com'),
+        envVar(key: 'dh_url', value: 'sch.sit3.lsacone.com'),
+        envVar(key: 'grant_type', value: 'client_credentials'),
+        envVar(key: 'client_id', value: 'data-onboarding'),
+        envVar(key: 'vars_file_location', value: 'ansible/inventory/sch-sit2/host_vars/k8s-masters/vars'),
+        envVar(key: 'otb_s3_bucket', value: 'dh-otb-sit3'),
+        envVar(key: 'source_automapper_s3_bucket', value: 'lsac-dev-sch'),
+        envVar(key: 'dh_s3_bucket', value: 'lsac-sit3-dh'),
+        envVar(key: 'dh_uat_s3_bucket', value: 'lsac-sit3-dh'),
+        envVar(key: 'vars_location', value: 'sch-tf-envs/terragrunt/live/lsacone-dev-sch-dev3'),
+        envVar(key: 'cluster_name', value: 'lsac-dev3-dh'),
+        envVar(key: 'master_namespace', value: 'dh-sit3'),
+        envVar(key: 'git_user', value: 'comprehend-bot'),
+        envVar(key: 'primary_tenant', value: 'dh-sit3'),
+        envVar(key: 'sch_tf_envs_branch', value: 'main'),
+        envVar(key: 'sch_infra_branch', value: 'feature/SRE-11265'),
+        envVar(key: 'src_git_user', value: 'comprehend-jenkins'),
+        envVar(key: 'dest_git_user', value: 'comprehend-jenkins'),
+        envVar(key: 'automapper_src_repo', value: 'airflow-dags-lsac-sit3-dh'),
+        envVar(key: 'automapper_dest_repo', value: 'airflow-dags-lsac-sit3-dh'),
+        envVar(key: 'automapper_git_src_branch', value: 'main'),
+        envVar(key: 'automapper_git_dest_branch', value: 'main'),
+        envVar(key: 'ecr_role', value: 'Jenkins-ECR-Role'),
+        envVar(key: 'terragrunt_role', value: 'LSACAdministratorsAccess'),
+        envVar(key: 'src_region', value: 'us-east-1'),
+        envVar(key: 'dest_region', value: 'us-east-1'),
+        envVar(key: 'rds_prefix', value: 'lsac-sit3-dh'),
+        envVar(key: 'migration_image', value: 'migration_to_24R1'),
+        envVar(key: 'fnf_home_url', value: 'home.sit3.lsacone.com'),
+        envVar(key: 'client_secret', value: 'sch-sit3-client-secret'),
+        envVar(key: 'jira_names', value: 'saama_jira'),
+        envVar(key: 'Textfile', value: 'jenkins_report.log'),
+        envVar(key: 'jenkins_cred_text', value: 'credentials("jenkins_cred_text")'),
+    ]
+) 
+{
+    properties([
+        parameters([
+            extendedChoice(name: 'Components', multiSelectDelimiter: ',', quoteValue: false, 
+                           type: 'PT_CHECKBOX', 
+                           description: 'Select the Component', 
+                           visibleItemCount: 22,
+                           groovyScript: '''
+                return ['PreRequisites', 'ApiDB', 'Docs', 'Redis', 'Aws-Cli-Unzip', 'SysAdmin', 'StudyAdmin', 'Python', 'Pyspark', 'PdaGateway', 'Transform', 'TransformApi', 'RawThirdParty', 'PdaDb', 'DQ', 'PdaHome', 'PdaNotifications', 'StudyTransform', 'Scale', 'Automaps-Inference-Image', 'Outbound', 'Migration-image', 'TerragruntApply', 'RedisRestart', 'init-all-api-Trigger', 'AutoMapper', 'GlobalFiles','OTB','Automaps-Inference-S3-Upload','migration-script','refresh-api','dh-sanity-checks']
+           '''
+            ),
+            string(name: 'JiraIssueKey', defaultValue: 'SRE-9866', description: 'Enter Jira Ticket ID, eg: SRE-9866'),
+            string(name: 'jira_comment', defaultValue: 'yes', description: 'Jira comment required or not, eg: yes/no'),
+            string(name: 'jenkins_url', defaultValue: 'https://jenkins.dev.lsacone.com/job/SCH/job/DH-SIT3/', description: 'Jenkins job url, eg: https://jenkins.dev.lsacone.com/job/SCH/job/DH-SIT3/')
+        ])
+    ])
+    node(POD_LABEL) {
+        stage('Select Components') {
+                container('sch-code-builder'){
+                script {
+                    def selectedComponents = params.Components.split(',')
+                    echo "Selected components: ${selectedComponents.join(', ')}"
+                    // You can add any common setup logic here
+                }
+            } 
+        }
+        stage('Read User Input') {
+            container('sch-code-builder'){ 
+                script {
+                    // Access the selected components from the 'Components' parameter
+                    def selectedComponents = params.Components.split(',')
+                    // Load the remaining user input from a file
+                    def uploadedFile = 'uploaded_file.txt'
+                    def fileBase64 = input message: 'Please provide a file', parameters: [base64File('file')]
+                    sh "set +x; echo '$fileBase64' | base64 -d > ./uploaded_file.txt"
+                    sh 'export $(cat ./uploaded_file.txt)'
+                    archiveArtifacts uploadedFile
+                    sh 'ls -lah'
+                    sh 'pwd'
+                }
+            }
+        }  
+        stage('Pull and Push API DB image') {
+            script {
+                if ( params.Components.contains('ApiDB') || params.Components.contains('Automaps-Inference-Image') || ) {
+                    container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                                if ( params.Components.contains('ApiDB') )
+                                    def image_name = sh(script: '''
+                                        i=api_db
+                                        cat uploaded_file.txt | grep ^$i=
+                                    '''
+                                    echo $image_name
+                                    pull_image(image_name)
+                                if ( params.Components.contains('Automaps-Inference-Image') )
+                                    def image_name = sh(script: '''
+                                        i=automap_inference_image
+                                        cat uploaded_file.txt | grep ^$i=
+                                    '''
+                                    echo $image_name
+                                    pull_image(image_name) 
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {  
+                                if ( params.Components.contains('ApiDB') )
+                                    def image_name = sh(script: '''
+                                        i=api_db
+                                        cat uploaded_file.txt | grep ^$i=
+                                    '''
+                                    echo $image_name
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                if ( params.Components.contains('Automaps-Inference-Image') )
+                                    def image_name = sh(script: '''
+                                        i=automap_inference_image
+                                        cat uploaded_file.txt | grep ^$i=
+                                    '''
+                                    echo $image_name
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+
+                                def stage_name = "Image_Migration_API_DB"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }  
+                    }
+                }
+            }
+        }         
+        stage('Pull and Push Docs image') {
+            script {
+                if (params.Components.contains('Docs')) {
+                    container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                cat uploaded_file.txt
+                                export $(cat uploaded_file.txt)    
+                                image=$docs
+                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
+                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
+                            '''
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {    
+                                sh '''
+                                    cat uploaded_file.txt
+                                    export $(cat uploaded_file.txt)
+                                    image=$docs
+                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+                                    if grep -w $image image_tag.txt; 
+                                    then 
+                                        export date=$(date +%Y_%m_%d-%H%M)
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                    else
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
+                                        podman image prune --all --force
+                                    fi     
+                                '''
+                                def stage_name = "Image_Migration_Docs"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        } 
+                    }
+                }
+            }
+        }  
+        stage('Pull and Push Redis image') {
+            script {
+                if (params.Components.contains('Redis')) {
+                    container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                cat uploaded_file.txt
+                                export $(cat uploaded_file.txt)    
+                                image=$redis
+                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
+                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
+                            '''
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {      
+                                sh '''
+                                    cat uploaded_file.txt
+                                    export $(cat uploaded_file.txt)
+                                    image=$redis
+                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+                                    if grep -w $image image_tag.txt; 
+                                    then 
+                                        export date=$(date +%Y_%m_%d-%H%M)
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                    else
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
+                                        podman image prune --all --force
+                                    fi     
+                                '''
+                                def stage_name = "Image_Migration_Redis"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Pull and Push AWS CLI Unzip image') {
+            script {
+                if (params.Components.contains('Aws-Cli-Unzip') && currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
+                    container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                cat uploaded_file.txt
+                                export $(cat uploaded_file.txt)    
+                                image=$aws_cli_unzip_image
+                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
+                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
+                            '''
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {      
+                                sh '''
+                                    cat uploaded_file.txt
+                                    export $(cat uploaded_file.txt)
+                                    image=$aws_cli_unzip_image
+                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+                                    if grep -w $image image_tag.txt; 
+                                    then 
+                                        export date=$(date +%Y_%m_%d-%H%M)
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                    else
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
+                                        podman image prune --all --force
+                                    fi     
+                                '''
+                                def stage_name = "Image_Migration_Unzip"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }          
+        stage('Pull and Push SysAdmin image') {
+            script {
+                if (params.Components.contains('SysAdmin')) {
+                    container('sch-code-builder'){
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                cat uploaded_file.txt
+                                export $(cat uploaded_file.txt)    
+                                image=$sys_tag
+                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
+                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
+                            '''
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {      
+                                sh '''
+                                    cat uploaded_file.txt
+                                    export $(cat uploaded_file.txt)
+                                    image=$sys_tag
+                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+                                    if grep -w $image image_tag.txt; 
+                                    then 
+                                        export date=$(date +%Y_%m_%d-%H%M)
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                    else
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
+                                        podman image prune --all --force
+                                    fi     
+                                '''
+                                def stage_name = "Image_Migration_SYS"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage('Pull and Push StudyAdmin image') {
+            script {
+                if (params.Components.contains('StudyAdmin')) {
+                    container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                cat uploaded_file.txt
+                                export $(cat uploaded_file.txt)    
+                                image=$study_tag
+                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
+                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
+                            '''
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {      
+                                sh '''
+                                    cat uploaded_file.txt
+                                    export $(cat uploaded_file.txt)
+                                    image=$study_tag
+                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+                                    if grep -w $image image_tag.txt; 
+                                    then 
+                                        export date=$(date +%Y_%m_%d-%H%M)
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                    else
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
+                                        podman image prune --all --force
+                                    fi     
+                                '''
+                                def stage_name = "Image_Migration_Study"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage('Pull and Push Python image') {
+            script {
+                if (params.Components.contains('Python')) {
+                    container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                cat uploaded_file.txt
+                                export $(cat uploaded_file.txt)    
+                                image=$python_image
+                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
+                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
+                            '''
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {      
+                                sh '''
+                                    cat uploaded_file.txt
+                                    export $(cat uploaded_file.txt)
+                                    image=$python_image
+                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+                                    if grep -w $image image_tag.txt; 
+                                    then 
+                                        export date=$(date +%Y_%m_%d-%H%M)
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                    else
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
+                                        podman image prune --all --force
+                                    fi     
+                                '''
+                                def stage_name = "Image_Migration_Python"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }   
+                    }
+                }
+            }
+        }
+        stage('Pull and Push PySpark image') {
+            script {
+                if (params.Components.contains('Pyspark')) {
+                    container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                cat uploaded_file.txt
+                                export $(cat uploaded_file.txt)    
+                                image=$pyspark_image
+                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
+                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
+                            '''
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {      
+                                sh '''
+                                    cat uploaded_file.txt
+                                    export $(cat uploaded_file.txt)
+                                    image=$pyspark_image
+                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+                                    if grep -w $image image_tag.txt; 
+                                    then 
+                                        export date=$(date +%Y_%m_%d-%H%M)
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                    else
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
+                                        podman image prune --all --force
+                                    fi     
+                                '''
+                                def stage_name = "Image_Migration_PySpark"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }      
+        stage('Pull and Push Gateway image') {
+            script {
+                if (params.Components.contains('PdaGateway')) {
+                    container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                cat uploaded_file.txt
+                                export $(cat uploaded_file.txt)    
+                                image=$gateway_tag
+                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
+                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
+                            '''
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {      
+                                sh '''
+                                    cat uploaded_file.txt
+                                    export $(cat uploaded_file.txt)
+                                    image=$gateway_tag
+                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+                                    if grep -w $image image_tag.txt; 
+                                    then 
+                                        export date=$(date +%Y_%m_%d-%H%M)
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                    else
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
+                                        podman image prune --all --force
+                                    fi     
+                                '''
+                                def stage_name = "Image_Migration_PdaGateway"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage('Pull and Push Transform image') {
+            script {
+                if (params.Components.contains('Transform')) {
+                    container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                cat uploaded_file.txt
+                                export $(cat uploaded_file.txt)    
+                                image=$sch_unified_cm
+                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
+                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
+                            '''
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {      
+                                sh '''
+                                    cat uploaded_file.txt
+                                    export $(cat uploaded_file.txt)
+                                    image=$sch_unified_cm
+                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+                                    if grep -w $image image_tag.txt; 
+                                    then 
+                                        export date=$(date +%Y_%m_%d-%H%M)
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                    else
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
+                                        podman image prune --all --force
+                                    fi     
+                                '''
+                                def stage_name = "Image_Migration_Transform"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        } 
+                    }
+                }
+            }
+        }  
+        stage('Pull and Push TransformApi image') {
+            script {
+                if (params.Components.contains('TransformApi')) {
+                    container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                cat uploaded_file.txt
+                                export $(cat uploaded_file.txt)    
+                                image=$map_preview
+                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
+                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
+                            '''
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {      
+                                sh '''
+                                    cat uploaded_file.txt
+                                    export $(cat uploaded_file.txt)
+                                    image=$map_preview
+                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+                                    if grep -w $image image_tag.txt; 
+                                    then 
+                                        export date=$(date +%Y_%m_%d-%H%M)
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                    else
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
+                                        podman image prune --all --force
+                                    fi     
+                                '''
+                                def stage_name = "Image_Migration_TransformApi"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }    
+                    }
+                }
+            }
+        }
+        stage('Pull and Push RawThirdParty image') {
+            script {
+                if (params.Components.contains('RawThirdParty')) {
+                    container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                cat uploaded_file.txt
+                                export $(cat uploaded_file.txt)    
+                                image=$raw_thirdparty_tag
+                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
+                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
+                            '''
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {      
+                                sh '''
+                                    cat uploaded_file.txt
+                                    export $(cat uploaded_file.txt)
+                                    image=$raw_thirdparty_tag
+                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+                                    if grep -w $image image_tag.txt; 
+                                    then 
+                                        export date=$(date +%Y_%m_%d-%H%M)
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                    else
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
+                                        podman image prune --all --force
+                                    fi     
+                                '''
+                                def stage_name = "Image_Migration_RawThirdParty"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }   
+                    }
+                }
+            }
+        }  
+        stage('Pull and Push PdaDB image') {
+            script {
+                if (params.Components.contains('PdaDb')) {
+                    container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                cat uploaded_file.txt
+                                export $(cat uploaded_file.txt)    
+                                image=$db_admin
+                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
+                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
+                            '''
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {      
+                                sh '''
+                                    cat uploaded_file.txt
+                                    export $(cat uploaded_file.txt)
+                                    image=$db_admin
+                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+                                    if grep -w $image image_tag.txt; 
+                                    then 
+                                        export date=$(date +%Y_%m_%d-%H%M)
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                    else
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
+                                        podman image prune --all --force
+                                    fi     
+                                '''
+                                def stage_name = "Image_Migration_PdaDB"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }  
+        stage('Pull and Push DQ image') {
+            script {
+                if (params.Components.contains('DQ')) {
+                    container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                cat uploaded_file.txt
+                                export $(cat uploaded_file.txt)    
+                                image=$dq
+                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
+                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
+                            '''
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {      
+                                sh '''
+                                    cat uploaded_file.txt
+                                    export $(cat uploaded_file.txt)
+                                    image=$dq
+                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+                                    if grep -w $image image_tag.txt; 
+                                    then 
+                                        export date=$(date +%Y_%m_%d-%H%M)
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                    else
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
+                                        podman image prune --all --force
+                                    fi     
+                                '''
+                                def stage_name = "Image_Migration_DQ"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }  
+        stage('Pull and Push PdaHome image') {
+            script {
+                if (params.Components.contains('PdaHome')) {
+                    container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                cat uploaded_file.txt
+                                export $(cat uploaded_file.txt)    
+                                image=$home
+                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
+                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
+                            '''
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {      
+                                sh '''
+                                    cat uploaded_file.txt
+                                    export $(cat uploaded_file.txt)
+                                    image=$home
+                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+                                    if grep -w $image image_tag.txt; 
+                                    then 
+                                        export date=$(date +%Y_%m_%d-%H%M)
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                    else
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
+                                        podman image prune --all --force
+                                    fi     
+                                '''
+                                def stage_name = "Image_Migration_PdaHome"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }    
+                    }
+                }
+            }
+        }
+        stage('Pull and Push PdaNotifications image') {
+            script {
+                if (params.Components.contains('PdaNotifications')) {
+                    container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                cat uploaded_file.txt
+                                export $(cat uploaded_file.txt)    
+                                image=$notification
+                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
+                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
+                            '''
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {      
+                                sh '''
+                                    cat uploaded_file.txt
+                                    export $(cat uploaded_file.txt)
+                                    image=$notification
+                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+                                    if grep -w $image image_tag.txt; 
+                                    then 
+                                        export date=$(date +%Y_%m_%d-%H%M)
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                    else
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
+                                        podman image prune --all --force
+                                    fi     
+                                '''
+                                def stage_name = "Image_Migration_PdaNotifications"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage('Pull and Push StudyTransform image') {
+            script {
+                if (params.Components.contains('StudyTransform')) {
+                    container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                cat uploaded_file.txt
+                                export $(cat uploaded_file.txt)    
+                                image=$transform
+                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
+                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
+                            '''
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {      
+                                sh '''
+                                    cat uploaded_file.txt
+                                    export $(cat uploaded_file.txt)
+                                    image=$transform
+                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+                                    if grep -w $image image_tag.txt; 
+                                    then 
+                                        export date=$(date +%Y_%m_%d-%H%M)
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                    else
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
+                                        podman image prune --all --force
+                                    fi     
+                                '''
+                                def stage_name = "Image_Migration_StudyTransform"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage('Pull and Push Scale image') {
+            script {
+                if (params.Components.contains('Scale')) {
+                    container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                cat uploaded_file.txt
+                                export $(cat uploaded_file.txt)    
+                                image=$dynamicdag
+                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
+                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
+                            '''
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {      
+                                sh '''
+                                    cat uploaded_file.txt
+                                    export $(cat uploaded_file.txt)
+                                    image=$dynamicdag
+                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+                                    if grep -w $image image_tag.txt; 
+                                    then 
+                                        export date=$(date +%Y_%m_%d-%H%M)
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                    else
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
+                                        podman image prune --all --force
+                                    fi     
+                                '''
+                                def stage_name = "Image_Migration_Scale"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }  
+                    }
+                }
+            }
+        }
+        stage('Pull and Push Automaps Inference image') {
+            script {
+                if (params.Components.contains('Automaps-Inference-Image') && currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
+                    container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                cat uploaded_file.txt
+                                export $(cat uploaded_file.txt)    
+                                image=$automap_inference_image
+                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
+                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
+                            '''
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {      
+                                sh '''
+                                    cat uploaded_file.txt
+                                    export $(cat uploaded_file.txt)
+                                    image=$automap_inference_image
+                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+                                    if grep -w $image image_tag.txt; 
+                                    then 
+                                        export date=$(date +%Y_%m_%d-%H%M)
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                    else
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
+                                        podman image prune --all --force
+                                    fi     
+                                '''
+                                def stage_name = "Image_Migration_Automaps_Inference"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage('Pull and Push OutBound image') {
+            script {
+                if (params.Components.contains('Outbound')) {
+                    container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                cat uploaded_file.txt
+                                export $(cat uploaded_file.txt)    
+                                image=$outbound_tag
+                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
+                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
+                            '''
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {      
+                                sh '''
+                                    cat uploaded_file.txt
+                                    export $(cat uploaded_file.txt)
+                                    image=$outbound_tag
+                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+                                    if grep -w $image image_tag.txt; 
+                                    then 
+                                        export date=$(date +%Y_%m_%d-%H%M)
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                    else
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
+                                        podman image prune --all --force
+                                    fi     
+                                '''
+                                def stage_name = "Image_Migration_OutBound"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }     
+                            }                       
+                        }
+                    }
+                }
+            }
+        }
+        stage('Pull and Push Migration image') {
+            script {
+                if (params.Components.contains('Migration-image')) {
+                    container('sch-code-builder'){
+                    // Stage 1: Pull Docker image using AWS credentials
+                        withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                cat uploaded_file.txt
+                                export $(cat uploaded_file.txt)    
+                                image=$migration_image
+                                aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+                                podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image  
+                                podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new  
+                            '''
+                        }
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {  
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {    
+                                sh '''
+                                    cat uploaded_file.txt
+                                    export $(cat uploaded_file.txt)
+                                    image=$migration_image
+                                    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+                                    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+                                    if grep -w $image image_tag.txt; 
+                                    then 
+                                        export date=$(date +%Y_%m_%d-%H%M)
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:${image}-backup-${date}
+                                        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image
+                                    else
+                                        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image}-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image  
+                                        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+                                        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image        
+                                        podman image prune --all --force
+                                    fi     
+                                '''
+                                def stage_name = "Image_Migration_Migration"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage('Terragrunt Apply') {
+            container('terragrunt-build'){
+                if (params.Components.contains('TerragruntApply')) {
+                    script {
+                        withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text'),                    
+                            [
+                            $class: 'SSHUserPrivateKeyBinding',
+                            credentialsId: "jenkins_github_ssh_key",
+                            usernameVariable: "username",
+                            keyFileVariable: "ssh_key",
+                            passphraseVariable: "passphrase",
+                        ]]) {
+                            withAWS(role:env.terragrunt_role, roleAccount:env.dest_aws_account, region:env.dest_region) { 
+                                sh '''
+                                                    
+                                    mkdir ~/.ssh
+                                    ssh-keyscan github.com >> ~/.ssh/known_hosts
+                                    chmod 600 $ssh_key
+                                    echo "IdentityFile $ssh_key" > ~/.ssh/config                
+                                    ls -lah
+                                    if [ -d "sch-tf-envs" ]; then
+                                        rm -rf sch-tf-envs
+                                    fi
+                                    cat uploaded_file.txt
+                                    set +x
+                                    export $(cat uploaded_file.txt)
+                                    set -x 
+                                    git clone --branch $sch_tf_envs_branch https://$git_user:$git_token@github.com/comprehend/sch-tf-envs.git
+                                    ls -lah
+                                    cd $vars_location
+
+                                    aws sts get-caller-identity
+                                    aws eks update-kubeconfig --name $cluster_name --region $dest_region
+                                    kubectl get ns
+
+
+                                    if [ -z "$api_db" ]; then
+                                    echo "Warning####api_db is not provided..So taking the input of current pod image####"
+                                    TF_VAR_api_db=$(kubectl describe deployment ${master_namespace}-api-db-deployment -n  ${master_namespace} | grep Image | awk '{print $2}' | awk -F':' '{print $2}')
+                                    echo "The api_db is ${TF_VAR_api_db}"
+                                    else
+                                    export TF_VAR_api_db=${api_db}
+                                    echo "Got the input.The api_db is ${TF_VAR_api_db}"
+                                    fi
+
+                                    if [ -z "$docs" ]; then
+                                    echo "Warning####docs is not provided..So taking the input of current pod image####"
+                                    TF_VAR_docs=$(kubectl describe deployment ${master_namespace}-docs-deployment -n  ${master_namespace} | grep Image | awk '{print $2}' | awk -F':' '{print $2}')
+                                    echo "The docs is ${TF_VAR_docs}"
+                                    else
+                                    export TF_VAR_docs=${docs}
+                                    echo "Got the input.The docs is ${TF_VAR_docs}"
+                                    fi
+
+                                    if [ -z "$redis" ]; then
+                                    echo "Warning####redis is not provided..So taking the input of current pod image####"
+                                    TF_VAR_redis=$(kubectl describe deployment ${master_namespace}-redis-deployment -n  ${master_namespace} | grep Image | awk '{print $2}' | awk -F':' '{print $2}')
+                                    echo "The redis is ${TF_VAR_redis}"
+                                    else
+                                    export TF_VAR_redis=${redis}
+                                    echo "Got the input.The redis is ${TF_VAR_redis}"
+                                    fi
+
+                                    if [ -z "$sys_tag" ]; then
+                                    echo "Warning####sys_tag is not provided..So taking the input of current pod image####"
+                                    TF_VAR_sys_tag=$(kubectl describe deployment ${master_namespace}-sys-deployment -n  ${master_namespace} | grep Image | awk '{print $2}' | awk -F':' '{print $2}')
+                                    echo "The Sys_admin tag is ${TF_VAR_sys_tag}"
+                                    else
+                                    export TF_VAR_sys_tag=${sys_tag}
+                                    echo "Got the input.The Sys_admin tag is ${TF_VAR_sys_tag}"
+                                    fi
+
+                                    if [ -z "$study_tag" ]; then
+                                    echo "Warning####study_tag is not provided..So taking the input of current pod image####"
+                                    TF_VAR_study_tag=$(kubectl describe deployment ${master_namespace}-study-deployment -n  ${master_namespace} | grep Image | awk '{print $2}' | awk -F':' '{print $2}')
+                                    echo "The study_tag is ${TF_VAR_study_tag}"
+                                    else
+                                    export TF_VAR_study_tag=${study_tag}
+                                    echo "Got the input.The study_tag is ${TF_VAR_study_tag}"
+                                    fi
+
+                                    if [ -z "$python_image" ]; then
+                                    echo "Warning####python_image is not provided..So taking the input of current pod image####"
+                                    TF_VAR_python_image=$(kubectl describe deployment ${master_namespace}-xpt-deployment -n  ${master_namespace} | grep Image | awk '{print $2}' | awk -F':' '{print $2}')
+                                    TF_VAR_fga_tag=$(kubectl describe deployment ${master_namespace}-xpt-deployment -n  ${master_namespace} | grep Image | awk '{print $2}' | awk -F':' '{print $2}')
+                                    TF_VAR_gsdm=$(kubectl describe deployment ${master_namespace}-xpt-deployment -n  ${master_namespace} | grep Image | awk '{print $2}' | awk -F':' '{print $2}')
+                                    TF_VAR_xpt=$(kubectl describe deployment ${master_namespace}-xpt-deployment -n  ${master_namespace} | grep Image | awk '{print $2}' | awk -F':' '{print $2}')
+                                    TF_VAR_dq_validator=$(kubectl describe deployment ${master_namespace}-xpt-deployment -n  ${master_namespace} | grep Image | awk '{print $2}' | awk -F':' '{print $2}')
+
+                                    echo "The python_image is ${TF_VAR_python_image}"
+                                    else
+                                    export TF_VAR_python_image=${python_image}
+                                    export TF_VAR_fga_tag=${python_image}
+                                    export TF_VAR_gsdm=${python_image}
+                                    export TF_VAR_xpt=${python_image}
+                                    export TF_VAR_dq_validator=${python_image}
+                                    
+                                    echo "Got the input.The python_image is ${TF_VAR_python_image}"
+                                    fi
+
+                                    if [ -z "$pyspark_image" ]; then
+                                    echo "Warning####pyspark_image is not provided..So taking the input of current pod image####"
+                                    TF_VAR_pyspark_image=$(kubectl describe deployment ${master_namespace}-dq-validator-deployment -n  ${master_namespace} | grep Image | awk '{print $2}' | awk -F':' '{print $2}')
+                                    echo "The pyspark_image is ${TF_VAR_pyspark_image}"
+                                    else
+                                    export TF_VAR_pyspark_image=${pyspark_image}
+                                    echo "Got the input.The pyspark_image is ${TF_VAR_pyspark_image}"
+                                    fi
+
+                                    if [ -z "$gateway_tag" ]; then
+                                    echo "Warning####gateway_tag is not provided..So taking the input of current pod image####"
+                                    TF_VAR_gateway_tag=$(kubectl describe deployment ${master_namespace}-gateway-deployment -n  ${master_namespace} | grep Image | awk '{print $2}' | awk -F':' '{print $2}')
+                                    echo "The gateway_tag is ${TF_VAR_gateway_tag}"
+                                    else
+                                    export TF_VAR_gateway_tag=${gateway_tag}
+                                    echo "Got the input.The gateway_tag is ${TF_VAR_gateway_tag}"
+                                    fi
+
+                                    if [ -z "$sch_unified_cm" ]; then
+                                    echo "Warning####sch_unified_cm is not provided..So taking the input of current pod image####"
+                                    TF_VAR_sch_unified_cm=$(kubectl get configmap ${master_namespace}-study-config -o jsonpath='{.data.application\\.properties}' --namespace=${master_namespace} | grep 'pda.image.transform' | awk -F '=' '{print $2}')
+                                    echo "The sch_unified_cm is ${TF_VAR_sch_unified_cm}"
+                                    else
+                                    export TF_VAR_sch_unified_cm=${sch_unified_cm}
+                                    echo "Got the input.The sch_unified_cm is ${TF_VAR_sch_unified_cm}"
+                                    fi
+
+                                    if [ -z "$map_preview" ]; then
+                                    echo "Warning####map_preview is not provided..So taking the input of current pod image####"
+                                    TF_VAR_map_preview=$(kubectl describe deployment ${master_namespace}-map-preview-deployment -n  ${master_namespace} | grep Image | grep merge | awk '{print $2}' | awk -F':' '{print $2}') 
+                                    echo "The map_preview is ${TF_VAR_map_preview}"
+                                    else
+                                    export TF_VAR_map_preview=${map_preview}
+                                    echo "Got the input.The map_preview is ${TF_VAR_map_preview}"
+                                    fi
+
+
+                                    if [ -z "$raw_thirdparty_tag" ]; then
+                                    echo "Warning####raw_thirdparty_tag is not provided..So taking the input of current pod image####"
+                                    TF_VAR_raw_thirdparty_tag=$(kubectl get configmap ${master_namespace}-study-config -o jsonpath='{.data.application\\.properties}' --namespace=${master_namespace} | grep 'pda.image.raw.thirdparty' | awk -F '=' '{print $2}')
+                                    TF_VAR_raw_thirdparty=$(kubectl get configmap ${master_namespace}-study-config -o jsonpath='{.data.application\\.properties}' --namespace=${master_namespace} | grep 'pda.image.raw.thirdparty' | awk -F '=' '{print $2}')
+                                    echo "The raw_thirdparty_tag is ${TF_VAR_raw_thirdparty_tag}"
+                                    else
+                                    export TF_VAR_raw_thirdparty_tag=${raw_thirdparty_tag}
+                                    export TF_VAR_raw_thirdparty=${raw_thirdparty_tag}
+                                    echo "Got the input.The raw_thirdparty_tag is ${TF_VAR_raw_thirdparty_tag}"
+                                    fi
+
+                                    if [ -z "$db_admin" ]; then
+                                    echo "Warning####db_admin is not provided..So taking the input of current pod image####"
+                                    TF_VAR_db_admin=$(kubectl describe deployment ${master_namespace}-db-deployment -n  ${master_namespace} | grep Image | awk '{print $2}' | awk -F':' '{print $2}')
+                                    echo "The db_admin is ${TF_VAR_db_admin}"
+                                    else
+                                    export TF_VAR_db_admin=${db_admin}
+                                    echo "Got the input.The db_admin is ${TF_VAR_db_admin}"
+                                    fi
+
+                                    if [ -z "$dq" ]; then
+                                    echo "Warning####dq is not provided..So taking the input of current pod image####"
+                                    TF_VAR_dq=$(kubectl describe deployment ${master_namespace}-dq-deployment -n  ${master_namespace} | grep Image | awk '{print $2}' | awk -F':' '{print $2}')
+                                    echo "The dq is ${TF_VAR_dq}"
+                                    else
+                                    export TF_VAR_dq=${dq}
+                                    echo "Got the input.The dq is ${TF_VAR_dq}"
+                                    fi
+
+                                    if [ -z "$home" ]; then
+                                    echo "Warning####home is not provided..So taking the input of current pod image####"
+                                    TF_VAR_home=$(kubectl describe deployment ${master_namespace}-home-deployment -n  ${master_namespace} | grep Image | awk '{print $2}' | awk -F':' '{print $2}')
+                                    echo "The home is ${TF_VAR_home}"
+                                    else
+                                    export TF_VAR_home=${home}
+                                    echo "Got the input.The home is ${TF_VAR_home}"
+                                    fi
+
+                                    if [ -z "$notification" ]; then
+                                    echo "Warning####notification is not provided..So taking the input of current pod image####"
+                                    TF_VAR_notification=$(kubectl describe deployment ${master_namespace}-notification-deployment -n  ${master_namespace} | grep Image | awk '{print $2}' | awk -F':' '{print $2}')
+                                    echo "The notification is ${TF_VAR_notification}"
+                                    else
+                                    export TF_VAR_notification=${notification}
+                                    echo "Got the input.The notification is ${TF_VAR_notification}"
+                                    fi
+
+                                    if [ -z "$transform" ]; then
+                                    echo "Warning####transform is not provided..So taking the input of current pod image####"
+                                    TF_VAR_transform=$(kubectl describe deployment ${master_namespace}-transform-deployment -n  ${master_namespace} | grep Image | awk '{print $2}' | awk -F':' '{print $2}')
+                                    echo "The transform is ${TF_VAR_transform}"
+                                    else
+                                    export TF_VAR_transform=${transform}
+                                    echo "Got the input.The transform is ${TF_VAR_transform}"
+                                    fi
+
+                                    if [ -z "$dynamicdag" ]; then
+                                    echo "Warning####dynamicdag is not provided..So taking the input of current pod image####"
+                                    TF_VAR_dynamicdag=$(kubectl describe deployment ${master_namespace}-dynamic-dag-deployment -n  ${master_namespace} | grep Image | awk '{print $2}' | awk -F':' '{print $2}')
+                                    echo "The dynamicdag is ${TF_VAR_dynamicdag}"
+                                    else
+                                    export TF_VAR_dynamicdag=${dynamicdag}
+                                    echo "Got the input.The dynamicdag is ${TF_VAR_dynamicdag}"
+                                    fi
+
+                                    if [ -z "$automap_inference_image" ]; then
+                                    echo "Warning####automap_inference_image is not provided..So taking the input of current pod image####"
+                                    TF_VAR_automap_inference_image=$(kubectl get configmap ${master_namespace}-study-config -o jsonpath='{.data.application\\.properties}' --namespace=${master_namespace} | grep 'automaps_inference_image' | awk -F '=' '{print $2}')
+                                    TF_VAR_automap_inference_image=$(kubectl get configmap ${master_namespace}-study-config -o jsonpath='{.data.application\\.properties}' --namespace=${master_namespace} | grep 'automaps_inference_image' | awk -F '=' '{print $2}')
+                                    echo "The automap_inference_image is ${TF_VAR_automap_inference_image}"
+                                    else
+                                    export TF_VAR_automap_inference_image=${automap_inference_image}
+                                    export TF_VAR_automap_inference_image=${automap_inference_image}
+                                    echo "Got the input.The automap_inference_image is ${TF_VAR_automap_inference_image}"
+                                    fi
+
+                                    if [ -z "$outbound_tag" ]; then
+                                    echo "Warning####outbound image is not provided..So taking the input of current pod image####"
+                                    TF_VAR_outbound_image=$(kubectl describe deployment ${master_namespace}-outbound-deployment -n  ${master_namespace} | grep Image | awk '{print $2}' | awk -F':' '{print $2}')
+                                    echo "The outbound image is ${TF_VAR_outbound_image}"
+                                    else
+                                    export TF_VAR_outbound_image=${outbound_tag}
+                                    echo "Got the input.The outbound image is ${TF_VAR_outbound_image}"
+                                    fi
+
+
+
+                                    terragrunt run-all apply --auto-approve --terragrunt-non-interactive --terragrunt-include-dir datahub-master-sit3 --terragrunt-exclude-dir datahub-account-sit3 --terragrunt-exclude-dir datahub-account-sit3-uat --terragrunt-exclude-dir sit3-dh-master --terragrunt-exclude-dir sit3-dh-accounts --terragrunt-exclude-dir dev3-dh-master --terragrunt-exclude-dir dev3-dh-accounts --terragrunt-exclude-dir foundation --terragrunt-exclude-dir eks --terragrunt-exclude-dir eks-infra --terragrunt-exclude-dir kafka --terragrunt-exclude-dir s3 --terragrunt-exclude-dir zookeeper --terragrunt-exclude-dir airflow -lock=false | grep -e '#' -e 'data' -e 'Plan' -e 'random' -e 'kubernetes_config_map' -e 'kubernetes_job' -e 'helm_release' -e 'null_resource' -e 'error' -e 'complete' -e 'chart' -e 'not' -e 'Apply' | grep -v 'password'
+
+
+
+                                    sleep 10
+
+                                    rm -rf ~/.ssh 
+                                    rm -rf sch-tf-envs
+
+                                '''
+                                def stage_name = "DH_Master_Deployment"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage('Terragrunt Tenant Apply') {
+            container('terragrunt-build'){
+                if (params.Components.contains('Terragrunt-Tenant-Apply')) {
+                    script {
+                        withAWS(role:env.terragrunt_role, roleAccount:env.dest_aws_account, region:env.dest_region) { 
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text'),
+                            [
+                                $class: 'SSHUserPrivateKeyBinding',
+                                credentialsId: "jenkins_github_ssh_key",
+                                usernameVariable: "username",
+                                keyFileVariable: "ssh_key",
+                                passphraseVariable: "passphrase",
+                            ]]) {
+                                sh '''
+                                                
+                                    mkdir ~/.ssh
+
+                                    ssh-keyscan github.com >> ~/.ssh/known_hosts
+                                    chmod 600 $ssh_key
+                                    echo "IdentityFile $ssh_key" > ~/.ssh/config                
+                                    
+                                    ls -lah
+                                    if [ -d "sch-tf-envs" ]; then
+                                        rm -rf sch-tf-envs
+                                    fi
+                                    cat uploaded_file.txt
+                                    set +x
+                                    export $(cat uploaded_file.txt)
+                                    set -x 
+                                    git clone --branch $sch_tf_envs_branch https://$git_user:$git_token@github.com/comprehend/sch-tf-envs.git
+                                    ls -lah
+                                    cd $vars_location
+                                    aws sts get-caller-identity
+                                    aws eks update-kubeconfig --name $cluster_name --region $dest_region
+                                    kubectl get ns
+
+                                    
+                                    sleep 10
+
+
+                                '''
+                                def stage_name = "DH_Tenant_Deployment"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } 
+        stage('RedisRestart') {
+            container('sch-code-builder'){
+                if (params.Components.contains('RedisRestart') && currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
+                    script {
+                        // Stage 2: Tag and push Docker image using different AWS credentials
+                        withAWS(role:env.terragrunt_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {       
+                                sh '''
+                                    aws sts get-caller-identity
+                                    aws eks update-kubeconfig --name $cluster_name --region $dest_region
+                                    kubectl rollout restart deployment ${master_namespace}-sys-deployment -n ${master_namespace}
+                                    sleep 5
+                                    kubectl rollout restart deployment ${master_namespace}-study-deployment -n ${master_namespace}
+                                    sleep 5
+                                    kubectl rollout restart deployment ${master_namespace}-redis-deployment -n ${master_namespace}
+                                    sleep 60
+                                '''
+                                def stage_name = "Redis_Restart"
+                                if (params.jira_comment == "yes") {
+                                    post_to_jira(stage_name)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage('refresh-api'){
+            container('sch-sanity-executor') {
+                if (params.Components.contains('refresh-api') && currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
+                    script {
+                        withCredentials([string(credentialsId:env.client_secret, variable: 'client_secret'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text'),string(credentialsId: 'comprehend-jenkins-git-token', variable: 'git_token')]) {
+                            sh '''
+                                set +x
+                                rm -rf sch-infra
+                                set -x
+                                git clone --branch $sch_infra_branch https://$git_user:$git_token@github.com/comprehend/sch-infra.git
+        
+                                export account_name=${primary_tenant}
+                                ls
+        
+                                python3 sch-infra/python/refresh-api.py
+                                rm -rf sch-tf-envs
+                                
+                            '''
+                            def stage_name = "refresh-api"
+                            if (params.jira_comment == "yes") {
+                                post_to_jira(stage_name)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage('init-all-api-Trigger'){
+            container('sch-sanity-executor') {
+                if (params.Components.contains('init-all-api-Trigger') && currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
+                    script {
+                        withCredentials([string(credentialsId:env.client_secret, variable: 'client_secret'),string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {
+                            sh '''
+                                set +x
+                                if [ -d "sch-infra" ]; then
+                                    rm -rf sch-infra
+                                fi
+                                set -x
+                                git clone --branch $sch_infra_branch https://$git_user:$git_token@github.com/comprehend/sch-infra.git
+
+                                export account_name=${primary_tenant}
+                                ls
+
+                                python3 sch-infra/python/account-init-all-api-trigger.py
+                            
+                            '''
+                            def stage_name = "init-all-api-Trigger"
+                            if (params.jira_comment == "yes") {
+                                post_to_jira(stage_name)
+                            }
+                        }   
+                    }
+                }
+            }
+        }
+        stage('dh-sanity-checks'){
+            container('sch-sanity-executor') {
+                if (params.Components.contains('dh-sanity-checks') && currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
+                    script {
+                        withCredentials([string(credentialsId:env.client_secret, variable: 'client_secret'),string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {
+                            sh '''
+                                set +x
+                                if [ -d "sch-infra" ]; then
+                                    rm -rf sch-infra
+                                fi
+                                set -x
+                                git clone --branch $sch_infra_branch https://$git_user:$git_token@github.com/comprehend/sch-infra.git
+
+                                export account_name=${primary_tenant}
+                                ls
+                                pwd
+                                python3 sch-infra/python/sanity-checks.py
+                    
+                            '''
+                            def stage_name = "dh_sanity_checks"
+                            if (params.jira_comment == "yes") {
+                                post_to_jira(stage_name)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }   
+}
+
+def post_to_jira(stage_name){
+
+  def jira_name = "${jira_names}"
+                    def jenkins_url = "${params.jenkins_url}"                    
+                    echo "$jira_name"
+                    echo "$jenkins_url"
+                    echo "$stage_name"
+                    echo "url: ${jenkins_url}"
+
+                    sh """
+                        echo sh_jira: $jira_name
+                        #jenkins_url="\$(echo $jenkins_url | sed -e 's|http://|https://|g')"
+                        echo $jenkins_url > url.txt
+                        cat url.txt | sed -e 's|http://|https://|g' > url_1.txt
+                        cat url_1.txt              
+                        ls -la
+                        curl -s -k -u "$jenkins_cred_text" --request GET "\$(cat url_1.txt)"${BUILD_NUMBER}/consoleText > ${BUILD_NUMBER}_${stage_name}_${Textfile}
+                        # echo "curl -s -k -u "\$(cat test.txt)" --request GET ${jenkins_url}${BUILD_NUMBER}/consoleText > ${BUILD_NUMBER}_${stage_name}_${Textfile}"
+                        #curl -s -k -u "\$(cat test.txt)" --request GET ${jenkins_url}${BUILD_NUMBER}/consoleText > ${BUILD_NUMBER}_${stage_name}_${Textfile}
+                        echo hi
+                        ls -la
+                    """
+                    
+                    def attachment = jiraUploadAttachment idOrKey: "${params.JiraIssueKey}", file: "${BUILD_NUMBER}_${stage_name}_${Textfile}", site: "${jira_name}"
+                    def commentBody = "${stage_name} stage completed. \n Log attached for the reference. \n Filename is *${BUILD_NUMBER}_${stage_name}_${Textfile}* \n Build_details: ${params.jenkins_url}"
+                    def commentWithAttachment = jiraAddComment comment: commentBody, idOrKey: "${params.JiraIssueKey}", attachments: [attachment], site: "${jira_name}"
+                    echo commentWithAttachment.data.toString()
+}
