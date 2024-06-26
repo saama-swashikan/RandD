@@ -97,12 +97,6 @@ podTemplate(
                     // Stage 1: Pull Docker image using AWS credentials
 
                         withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
-sh '''
-                                cat uploaded_file.txt
-                                export $(cat uploaded_file.txt)
-cat uploaded_file.txt | grep ^api_db= | cut -d'=' -f2;  
-'''
-sh 'cat uploaded_file.txt; export $(cat uploaded_file.txt)'
 
                                 def image_name = sh(script: '''
 echo "db-api-4.0"
