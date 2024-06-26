@@ -1,3 +1,5 @@
+
+
 podTemplate(
     containers: [
         containerTemplate(
@@ -9,8 +11,32 @@ podTemplate(
             resourceLimitMemory: '16Gi'
         ),
         containerTemplate(
+            name: 'sch-automapper',
+            image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-build-agent:git',
+            command: 'cat',
+            ttyEnabled: true,
+            resourceLimitEphemeralStorage: '5Gi',
+            resourceLimitMemory: '8Gi'
+        ),
+        containerTemplate(
+            name: 'sch-image-builder',
+            image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-build-agent:kaniko-with-aws',
+            command: 'cat',
+            ttyEnabled: true,
+            resourceLimitEphemeralStorage: '5Gi',
+            resourceLimitMemory: '8Gi'
+        ),
+        containerTemplate(
             name: 'terragrunt-build',
             image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-build-agent:terragrunt-always-latest',
+            command: 'cat',
+            ttyEnabled: true,
+            resourceLimitEphemeralStorage: '5Gi',
+            resourceLimitMemory: '8Gi'
+        ),
+        containerTemplate(
+            name: 'migration-script',
+            image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-apps:migration-23r2',
             command: 'cat',
             ttyEnabled: true,
             resourceLimitEphemeralStorage: '5Gi',
@@ -42,41 +68,34 @@ podTemplate(
     envVars: [
         envVar(key: 'source_aws_account', value: '791532114280'),
         envVar(key: 'dest_aws_account', value: '791532114280'),
-        envVar(key: 'source_aws_repo', value: 'sch-dev2-apps'),
-        envVar(key: 'dest_aws_repo', value: 'dh-sit3'),
-        envVar(key: 'fnf_url', value: 'signin.sit3.lsacone.com'),
-        envVar(key: 'dh_url', value: 'sch.sit3.lsacone.com'),
+        envVar(key: 'source_aws_repo', value: 'dh-sit5'),
+        envVar(key: 'dest_aws_repo', value: 'dh-sit5'),
+        envVar(key: 'fnf_url', value: 'signin.sit5.lsacone.com'),
+        envVar(key: 'dh_url', value: 'dh.sit5.lsacone.com'),
         envVar(key: 'grant_type', value: 'client_credentials'),
         envVar(key: 'client_id', value: 'data-onboarding'),
         envVar(key: 'vars_file_location', value: 'ansible/inventory/sch-sit2/host_vars/k8s-masters/vars'),
-        envVar(key: 'otb_s3_bucket', value: 'dh-otb-sit3'),
+        envVar(key: 'otb_s3_bucket', value: 'dh-otb-sit5'),
         envVar(key: 'source_automapper_s3_bucket', value: 'lsac-dev-sch'),
-        envVar(key: 'dh_s3_bucket', value: 'lsac-sit3-dh'),
-        envVar(key: 'dh_uat_s3_bucket', value: 'lsac-sit3-dh'),
-        envVar(key: 'vars_location', value: 'sch-tf-envs/terragrunt/live/lsacone-dev-sch-dev3'),
-        envVar(key: 'cluster_name', value: 'lsac-dev3-dh'),
-        envVar(key: 'master_namespace', value: 'dh-sit3'),
+        envVar(key: 'dh_s3_bucket', value: 'lsac-sit5-dh'),
+        envVar(key: 'dh_uat_s3_bucket', value: 'lsac-sit5-dh-uat'),
+        envVar(key: 'vars_location', value: 'sch-tf-envs/terragrunt/live/lsacone-dev-sch-sit5'),
+        envVar(key: 'cluster_name', value: 'lsac-sit5-dh'),
+        envVar(key: 'master_namespace', value: 'dh-sit5'),
         envVar(key: 'git_user', value: 'comprehend-bot'),
         envVar(key: 'primary_tenant', value: 'dh-sit3'),
-        envVar(key: 'sch_tf_envs_branch', value: 'main'),
-        envVar(key: 'sch_infra_branch', value: 'feature/SRE-11265'),
+        envVar(key: 'sch_tf_envs_branch', value: 'feature/SRE-10177'),
         envVar(key: 'src_git_user', value: 'comprehend-jenkins'),
         envVar(key: 'dest_git_user', value: 'comprehend-jenkins'),
         envVar(key: 'automapper_src_repo', value: 'airflow-dags-lsac-sit3-dh'),
-        envVar(key: 'automapper_dest_repo', value: 'airflow-dags-lsac-sit3-dh'),
+        envVar(key: 'automapper_dest_repo', value: 'airflow-dags-lsac-sit5-dh'),
         envVar(key: 'automapper_git_src_branch', value: 'main'),
         envVar(key: 'automapper_git_dest_branch', value: 'main'),
         envVar(key: 'ecr_role', value: 'Jenkins-ECR-Role'),
         envVar(key: 'terragrunt_role', value: 'LSACAdministratorsAccess'),
         envVar(key: 'src_region', value: 'us-east-1'),
         envVar(key: 'dest_region', value: 'us-east-1'),
-        envVar(key: 'rds_prefix', value: 'lsac-sit3-dh'),
-        envVar(key: 'migration_image', value: 'migration_to_24R1'),
-        envVar(key: 'fnf_home_url', value: 'home.sit3.lsacone.com'),
-        envVar(key: 'client_secret', value: 'sch-sit3-client-secret'),
-        envVar(key: 'jira_names', value: 'saama_jira'),
-        envVar(key: 'Textfile', value: 'jenkins_report.log'),
-        envVar(key: 'jenkins_cred_text', value: 'credentials("jenkins_cred_text")'),
+        envVar(key: 'rds_prefix', value: 'lsac-sit5-dh')
     ]
 ) 
 {
@@ -87,12 +106,9 @@ podTemplate(
                            description: 'Select the Component', 
                            visibleItemCount: 22,
                            groovyScript: '''
-                return ['PreRequisites', 'ApiDB', 'Docs', 'Redis', 'Aws-Cli-Unzip', 'SysAdmin', 'StudyAdmin', 'Python', 'Pyspark', 'PdaGateway', 'Transform', 'TransformApi', 'RawThirdParty', 'PdaDb', 'DQ', 'PdaHome', 'PdaNotifications', 'StudyTransform', 'Scale', 'Automaps-Inference-Image', 'Outbound', 'Migration-image', 'TerragruntApply', 'RedisRestart', 'init-all-api-Trigger', 'AutoMapper', 'GlobalFiles','OTB','Automaps-Inference-S3-Upload','migration-script','refresh-api','dh-sanity-checks']
+                return ['PreRequisites', 'ApiDB', 'Docs', 'Redis', 'Aws-Cli-Unzip', 'SysAdmin', 'StudyAdmin', 'Python', 'Pyspark', 'PdaGateway', 'Transform', 'TransformApi', 'RawThirdParty', 'PdaDb', 'DQ', 'PdaHome', 'PdaNotifications', 'StudyTransform', 'Scale', 'Automaps-Inference-Image', 'Outbound', 'TerragruntApply', 'RedisRestart', 'init-all-api-Trigger', 'AutoMapper', 'GlobalFiles','OTB','Automaps-Inference-S3-Upload','dh-sanity-checks']
            '''
-            ),
-            string(name: 'JiraIssueKey', defaultValue: 'SRE-9866', description: 'Enter Jira Ticket ID, eg: SRE-9866'),
-            string(name: 'jira_comment', defaultValue: 'yes', description: 'Jira comment required or not, eg: yes/no'),
-            string(name: 'jenkins_url', defaultValue: 'https://jenkins.dev.lsacone.com/job/SCH/job/DH-SIT3/', description: 'Jenkins job url, eg: https://jenkins.dev.lsacone.com/job/SCH/job/DH-SIT3/')
+            )
         ])
     ])
     node(POD_LABEL) {
@@ -120,42 +136,302 @@ podTemplate(
                     sh 'pwd'
                 }
             }
-        }  
+        }
+       
         stage('Pull and Push API DB image') {
             script {
-                if ( params.Components.contains('ApiDB') || params.Components.contains('Automaps-Inference-Image') ) {
+                if (params.Components.contains('ApiDB')) {
                     container('sch-code-builder'){
                     // Stage 1: Pull Docker image using AWS credentials
+
                         withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
-                                    def image_name = sh(script: '''
+sh '''
+cat uploaded_file.txt | grep ^api_db= | cut -d'=' -f2; 
+'''
+                                def image_name = sh(script: '''
                                         i=api_db
-                                        cat uploaded_file.txt | grep ^api_db=
-                                    '''
-                                    echo $image_name
-                                    pull_image(image_name)
+                                        cat uploaded_file.txt | grep ^api_db= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                echo $image_name
+                                pull_image(image_name)  
+                        }   
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {  
+                                def image_name = sh(script: '''
+                                        i=api_db
+                                        cat uploaded_file.txt | grep ^api_db= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                push_image(image_name,date)
                         }
-                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
-                            withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token'),string(credentialsId: 'jenkins_cred_text', variable: 'jenkins_cred_text')]) {  
-                                    def image_name = sh(script: '''
-                                        i=api_db
-                                        cat uploaded_file.txt | grep ^api_db=
-                                    '''
-                                    echo $image_name
-                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
-                                    push_image(image_name,date)
-                        
-                                def stage_name = "Image_Migration_API_DB"
-                                if (params.jira_comment == "yes") {
-                                    post_to_jira(stage_name)
-                                }
-                            }
-                        }  
+                    }
+            }
+        }
+}
+        stage('RedisRestart') {
+            container('sch-code-builder'){
+                if (params.Components.contains('RedisRestart') && currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
+                    script {
+                        // Stage 2: Tag and push Docker image using different AWS credentials
+                        withAWS(role:env.terragrunt_role, roleAccount:env.dest_aws_account, region:env.dest_region) { 
+                            sh '''
+                                aws sts get-caller-identity
+                                aws eks update-kubeconfig --name $cluster_name --region $dest_region
+                                kubectl rollout restart deployment ${master_namespace}-sys-deployment -n ${master_namespace}
+                                sleep 5
+                                kubectl rollout restart deployment ${master_namespace}-study-deployment -n ${master_namespace}
+                                sleep 5
+                                kubectl rollout restart deployment ${master_namespace}-redis-deployment -n ${master_namespace}
+                            '''
+                        }
                     }
                 }
             }
-        }         
+        }
+        stage('Global files S3 upload') {
+            script {
+                if (params.Components.contains('GlobalFiles') && currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
+                    container('sch-code-builder') {
+                    // Stage 1: Pull Docker image using AWS credentials
+                    git branch: 'release-23R2', credentialsId: 'jenkins_github_access_token', url: 'https://github.com/comprehend/sch.git'
+                        withAWS(role:env.terragrunt_role, roleAccount:env.dest_aws_account, region:env.dest_region) {  
+                            sh '''
+                                ls -lah
+                                s3_bucket=$dh_s3_bucket
+                                s3_folder="global/"
+
+
+                                if [ -d "global" ]; then
+                                # Remove the directory and its contents
+                                    rm -r "global"
+                                    echo "Directory 'global' has been removed."
+                                    mkdir ./global
+                                else
+                                    echo "Directory 'global' does not exist."
+                                    mkdir ./global
+                                fi
+                                aws s3 cp "s3://${s3_bucket}/${s3_folder}" ./global/ --recursive
+                                # Navigate to the /tmp/ directory
+                                # Create a zip archive
+                                zip -r latest_${BUILD_TAG}.zip global
+
+                                # Copy the zip archive to another location in S3
+                                aws s3 cp latest_${BUILD_TAG}.zip "s3://${s3_bucket}/global-files-archive/"
+                                aws s3 cp metadata/codm/* s3://${s3_bucket}/global/codm/latest/
+                                aws s3 cp metadata/del/* s3://${s3_bucket}/global/spdm/latest/  
+                                aws s3 cp metadata/standards/* s3://${s3_bucket}/global/standards/latest/
+                                
+                                # Remove the files from the S3 folder
+                                #  aws s3 rm "s3://${s3_bucket}/${s3_folder}" --recursive
+                                #rm -rf global
+                                # Return to the original working directory
+
+                                ls -lah
+                                s3_bucket=$dh_uat_s3_bucket
+                                s3_folder="global/"
+
+
+                                if [ -d "global" ]; then
+                                # Remove the directory and its contents
+                                    rm -r "global"
+                                    echo "Directory 'global' has been removed."
+                                    mkdir ./global
+                                else
+                                    echo "Directory 'global' does not exist."
+                                    mkdir ./global
+                                fi
+                                aws s3 cp "s3://${s3_bucket}/${s3_folder}" ./global/ --recursive
+                                # Navigate to the /tmp/ directory
+                                # Create a zip archive
+                                zip -r latest_${BUILD_TAG}.zip global
+
+                                # Copy the zip archive to another location in S3
+                                aws s3 cp latest_${BUILD_TAG}.zip "s3://${s3_bucket}/global-files-archive/"
+                                aws s3 cp metadata/codm/* s3://${s3_bucket}/global/codm/latest/
+                                aws s3 cp metadata/del/* s3://${s3_bucket}/global/spdm/latest/  
+                                aws s3 cp metadata/standards/* s3://${s3_bucket}/global/standards/latest/
+                                
+                                # Remove the files from the S3 folder
+                                #  aws s3 rm "s3://${s3_bucket}/${s3_folder}" --recursive
+                                #rm -rf global
+                                # Return to the original working directory
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+        stage('OTB S3 upload') {
+            script {
+                if (params.Components.contains('OTB') && currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
+                    container('sch-code-builder'){
+                        // Stage 1: Pull Docker image using AWS credentials
+                        git branch: 'test', credentialsId: 'jenkins_github_access_token', url: 'https://github.com/saamaresearch/otb.git'
+                        withCredentials([string(credentialsId: 'dev5_zip_pass', variable: 'zip_pass')]) {
+                            withAWS(role:env.terragrunt_role, roleAccount:env.dest_aws_account, region:env.dest_region) {  
+                                sh '''
+                                    zip -r -P ${zip_pass} functions.zip functions/
+                                    S3_FILE_KEY="functions.zip"
+                                    aws s3 cp functions.zip s3://${otb_s3_bucket}/
+                                '''
+                            }
+                        }
+                    }
+                }
+            }    
+        }
+
+        stage('AutoMapper') {
+            if (params.Components.contains('AutoMapper'))  {
+                script {
+                    container('sch-automapper') {
+                        withCredentials([string(credentialsId: 'comprehend-bot-github-token', variable: 'src_git_token'),string(credentialsId: 'comprehend-bot-github-token', variable: 'dest_git_token')]){
+                            // Set Git user and email globally
+                            sh '''
+                                set +e
+                                git config --global user.email lsac.sre+comprehend.bot@saama.com
+                                git config --global user.name comprehend-bot
+                                git clone --branch $automapper_git_src_branch https://$src_git_user:$src_git_token@github.com/saamaresearch/sam-automap-inference.git
+                                git clone --branch $automapper_git_dest_branch https://$dest_git_user:$dest_git_token@github.com/comprehend/${automapper_dest_repo}.git
+                                cd $automapper_dest_repo && git checkout $automapper_git_dest_branch
+                                cd ..
+                                if [ -d "$automapper_dest_repo/dags/" ]; then
+                                    echo "dags dir exist"
+                                else
+                                    mkdir $automapper_dest_repo/dags/
+                                fi
+                                cp -r sam-automap-inference/sch_dags/* $automapper_dest_repo/dags/
+                                cp -r sam-automap-inference/sch_dags/.airflowignore $automapper_dest_repo/dags/
+                                cd $automapper_dest_repo/
+                                git status
+                                git add .
+                                git commit -m "E2E deployment" .
+                                git push https://$dest_git_user:$dest_git_token@github.com/comprehend/${automapper_dest_repo}.git
+                                set -e
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+        stage('Git-sit3-sit5') {
+            if (params.Components.contains('Git-sit3-sit5')) {
+                script {
+                    container('sch-automapper') {
+                        withCredentials([string(credentialsId: 'vishnu-github-token', variable: 'src_git_token'),string(credentialsId: 'comprehend-bot-github-token', variable: 'dest_git_token')]){
+                            // Set Git user and email globally
+                            sh '''
+                                set +e
+                                git config --global user.email lsac.sre+comprehend.bot@saama.com
+                                git config --global user.name comprehend-bot
+                                git clone --branch $automapper_git_src_branch https://$src_git_user:$src_git_token@github.com/comprehend/${automapper_src_repo}.git
+                                git clone --branch $automapper_git_dest_branch https://$dest_git_user:$dest_git_token@github.com/comprehend/${automapper_dest_repo}.git
+                                cd $automapper_dest_repo && git checkout $automapper_git_dest_branch
+                                cd ..
+                                if [ -d "$automapper_dest_repo/dags/" ]; then
+                                    rm -rf $automapper_dest_repo/dags/
+                                    mkdir $automapper_dest_repo/dags/
+                                else
+                                    mkdir $automapper_dest_repo/dags/
+                                fi
+                                cp -r ${automapper_src_repo}/dags/* $automapper_dest_repo/dags/
+                                cp -r ${automapper_src_repo}/dags/.airflowignore $automapper_dest_repo/dags/
+                                cd $automapper_dest_repo/
+                                git status
+                                git add .
+                                git commit -m "Moved dag data from sit3 to sit5" .
+                                git push https://$dest_git_user:$dest_git_token@github.com/comprehend/${automapper_dest_repo}.git
+                                set -e
+                            '''
+                        }
+                    }
+                }
+            }    
+        }
+        stage('Automapper S3 Upload') {
+            container('sch-code-builder'){
+                if (params.Components.contains('Automaps-Inference-S3-Upload') && currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
+                    script {
+                        // Stage 2: Tag and push Docker image using different AWS credentials
+                        withAWS(role:env.terragrunt_role, roleAccount:env.source_aws_account, region:env.src_region) { 
+                            sh '''
+                                mkdir AUTOMAPS_INFERENCE
+                                echo ${source_automapper_s3_bucket}
+                                aws s3 ls s3://${source_automapper_s3_bucket}/
+                                aws s3 ls s3://${source_automapper_s3_bucket}/AUTOMAPS_INFERENCE/
+                                aws s3 cp s3://${source_automapper_s3_bucket}/AUTOMAPS_INFERENCE AUTOMAPS_INFERENCE --recursive 
+                                ls
+                            '''
+                        }        
+                        withAWS(role:env.terragrunt_role, roleAccount:env.dest_aws_account, region:env.dest_region) {  
+                            sh '''
+                                aws sts get-caller-identity
+                                echo ${dh_s3_bucket}
+                                aws s3 cp AUTOMAPS_INFERENCE/ s3://${dh_s3_bucket}/AUTOMAPS_INFERENCE --recursive
+                                aws s3 ls s3://${dh_s3_bucket}/
+                                aws s3 ls s3://${dh_s3_bucket}/AUTOMAPS_INFERENCE/
+                                ls
+                                echo ${dh_uat_s3_bucket}
+                                aws s3 cp AUTOMAPS_INFERENCE/ s3://${dh_uat_s3_bucket}/AUTOMAPS_INFERENCE --recursive
+                                aws s3 ls s3://${dh_uat_s3_bucket}/
+                                aws s3 ls s3://${dh_uat_s3_bucket}/AUTOMAPS_INFERENCE/
+                                ls
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+        stage('init-all-api-Trigger'){
+            container('sch-sanity-executor') {
+                if (params.Components.contains('init-all-api-Trigger') && currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
+                    script {
+                        withCredentials([string(credentialsId: 'sch-sit5-client-secret', variable: 'client_secret'),string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token')]) {
+                            sh '''
+                                set +x
+                                if [ -d "sch-infra" ]; then
+                                    rm -rf sch-infra
+                                fi
+                                set -x
+                                git clone --branch $sch_tf_envs_branch https://$git_user:$git_token@github.com/comprehend/sch-infra.git
+
+                                export account_name=${primary_tenant}
+                                ls
+
+                                python3 sch-infra/python/account-init-all-api-trigger.py
+                            
+                            '''
+                        }   
+                    }
+                }
+            }
+        }
+        stage('dh-sanity-checks'){
+            container('sch-sanity-executor') {
+                if (params.Components.contains('dh-sanity-checks') && currentBuild.resultIsBetterOrEqualTo('SUCCESS')) {
+                    script {
+                        withCredentials([string(credentialsId: 'sch-sit5-client-secret', variable: 'client_secret'),string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token')]) {
+                            sh '''
+                                set +x
+                                if [ -d "sch-infra" ]; then
+                                    rm -rf sch-infra
+                                fi
+                                set -x
+                                git clone --branch $sch_tf_envs_branch https://$git_user:$git_token@github.com/comprehend/sch-infra.git
+
+                                export account_name=${primary_tenant}
+                                ls
+                                pwd
+                                python3 sch-infra/python/sanity-checks.py
+                    
+                            '''
+                        }
+                    }
+                }
+            }
+        }
     }   
 }
+
 def pull_image(image_name) {
 echo "$image_name"
   sh """
@@ -188,33 +464,4 @@ echo "$date"
     fi  
   """
 
-}
-
-def post_to_jira(stage_name){
-
-  def jira_name = "${jira_names}"
-                    def jenkins_url = "${params.jenkins_url}"                    
-                    echo "$jira_name"
-                    echo "$jenkins_url"
-                    echo "$stage_name"
-                    echo "url: ${jenkins_url}"
-
-                    sh """
-                        echo sh_jira: $jira_name
-                        #jenkins_url="\$(echo $jenkins_url | sed -e 's|http://|https://|g')"
-                        echo $jenkins_url > url.txt
-                        cat url.txt | sed -e 's|http://|https://|g' > url_1.txt
-                        cat url_1.txt              
-                        ls -la
-                        curl -s -k -u "$jenkins_cred_text" --request GET "\$(cat url_1.txt)"${BUILD_NUMBER}/consoleText > ${BUILD_NUMBER}_${stage_name}_${Textfile}
-                        # echo "curl -s -k -u "\$(cat test.txt)" --request GET ${jenkins_url}${BUILD_NUMBER}/consoleText > ${BUILD_NUMBER}_${stage_name}_${Textfile}"
-                        #curl -s -k -u "\$(cat test.txt)" --request GET ${jenkins_url}${BUILD_NUMBER}/consoleText > ${BUILD_NUMBER}_${stage_name}_${Textfile}
-                        echo hi
-                        ls -la
-                    """
-                    
-                    def attachment = jiraUploadAttachment idOrKey: "${params.JiraIssueKey}", file: "${BUILD_NUMBER}_${stage_name}_${Textfile}", site: "${jira_name}"
-                    def commentBody = "${stage_name} stage completed. \n Log attached for the reference. \n Filename is *${BUILD_NUMBER}_${stage_name}_${Textfile}* \n Build_details: ${params.jenkins_url}"
-                    def commentWithAttachment = jiraAddComment comment: commentBody, idOrKey: "${params.JiraIssueKey}", attachments: [attachment], site: "${jira_name}"
-                    echo commentWithAttachment.data.toString()
 }
