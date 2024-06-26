@@ -1531,7 +1531,39 @@ podTemplate(
         }
     }   
 }
+def pull_image(image_name) {
+echo "$image_name"
+  sh """
+    aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+    podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image_name}  
+    podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image_name} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image_name}-new  
+  """
+}
 
+def push_image(image_name,date) {
+echo "$image_name"
+echo "$date"
+  sh """
+    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+    if grep -w $image_name image_tag.txt; 
+    then 
+        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+        podman pull ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image_name
+        podman tag ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image_name ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image_name-backup-${date}
+        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image_name-backup-${date}
+        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image_name
+        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image_name-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image_name  
+        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image_name
+    else
+        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image_name-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image_name  
+        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image_name        
+        podman image prune --all --force
+    fi  
+  """
+
+}
 def post_to_jira(stage_name){
 
   def jira_name = "${jira_names}"
