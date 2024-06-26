@@ -95,7 +95,7 @@ podTemplate(
        
         stage('Pull and Push Redis and SysAdmin image') {
             script {
-                if ( params.Components.contains('ApiDB') || params.Components.contains('Docs') || params.Components.contains('Redis') || params.Components.contains('SysAdmin') || params.Components.contains('StudyAdmin') || params.Components.contains('Python') || params.Components.contains('Pyspark') || params.Components.contains('PdaGateway') || params.Components.contains('Transform') || params.Components.contains('TransformApi') || params.Components.contains('RawThirdParty') || params.Components.contains('PdaDb') || params.Components.contains('DQ') || params.Components.contains('PdaHome') || params.Components.contains('PdaNotifications') || params.Components.contains('StudyTransform') || params.Components.contains('Scale') || params.Components.contains('Automaps-Inference-Image') || params.Components.contains('Outbound') || params.Components.contains('Migration-image') ) {
+                if ( params.Components.contains('ApiDB') || params.Components.contains('Docs') || params.Components.contains('Redis') || params.Components.contains('SysAdmin') || params.Components.contains('StudyAdmin') || params.Components.contains('Python') || params.Components.contains('Pyspark') || params.Components.contains('PdaGateway') || params.Components.contains('Transform') || params.Components.contains('TransformApi') || params.Components.contains('RawThirdParty') || params.Components.contains('PdaDb') || params.Components.contains('DQ') || params.Components.contains('PdaHome') || params.Components.contains('PdaNotifications') || params.Components.contains('StudyTransform') || params.Components.contains('Scale') || params.Components.contains('Automaps-Inference-Image') || params.Components.contains('Outbound') || params.Components.contains('Migration-image') || params.Components.contains('GMR') ) {
                     container('sch-code-builder'){
                     // Stage 1: Pull Docker image using AWS credentials
 
@@ -217,6 +217,12 @@ podTemplate(
                             if ( params.Components.contains('Migration-image') ) {
                                 def image_name = sh(script: '''
                                     i=migration_image; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                pull_image(image_name)  
+                            }
+                            if ( params.Components.contains('GMR') ) {
+                                def image_name = sh(script: '''
+                                    i=gmr_image; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
                                 ''', returnStdout: true).trim()
                                 pull_image(image_name)  
                             }
@@ -440,6 +446,17 @@ podTemplate(
                                     def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
                                     push_image(image_name,date)
                                     def stage_name = "Image_Migration_Migration"
+                                    if (params.jira_comment == "yes") {
+                                        post_to_jira(stage_name)
+                                    }
+                                }
+                                if ( params.Components.contains('GMR') ) {
+                                    def image_name = sh(script: '''
+                                        i=gmr_image; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                    ''', returnStdout: true).trim()
+                                    def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                    push_image(image_name,date)
+                                    def stage_name = "Image_Migration_GMR"
                                     if (params.jira_comment == "yes") {
                                         post_to_jira(stage_name)
                                     }
