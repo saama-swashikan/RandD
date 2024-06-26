@@ -90,27 +90,42 @@ podTemplate(
             }
         }
        
-        stage('Pull and Push API DB image') {
+        stage('Pull and Push Redis and SysAdmin image') {
             script {
-                if (params.Components.contains('ApiDB')) {
+                if ( params.Components.contains('Redis') || params.Components.contains('SysAdmin') ) {
                     container('sch-code-builder'){
                     // Stage 1: Pull Docker image using AWS credentials
 
                         withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
-
+                            if ( params.Components.contains('Redis') ) {
                                 def image_name = sh(script: '''
                                         i=redis; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
                                 ''', returnStdout: true).trim()
-
                                 pull_image(image_name)  
+                            }
+                            if ( params.Components.contains('SysAdmin') ) {
+                                def image_name = sh(script: '''
+                                        i=sys_tag; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                pull_image(image_name)  
+                            }
                         }   
-                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {  
+                        withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {
+                            if ( params.Components.contains('Redis') ) {
                                 def image_name = sh(script: '''
                                         i=redis; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
                                 ''', returnStdout: true).trim()
-
                                 def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
                                 push_image(image_name,date)
+                            }
+                            if ( params.Components.contains('SysAdmin') ) {
+                                def image_name = sh(script: '''
+                                        i=sys_tag; cat uploaded_file.txt | grep ^$i= | cut -d'=' -f2; 
+                                ''', returnStdout: true).trim()
+                                def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                                push_image(image_name,date)
+                            }
+
                         }
                     }
             }
