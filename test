@@ -99,19 +99,19 @@ podTemplate(
                         withAWS(role:env.ecr_role, roleAccount:env.source_aws_account, region:env.src_region) { 
 
                                 def image_name = sh(script: '''
-echo "db-api-4.0"
+                                        cat uploaded_file.txt | grep ^api_db= | cut -d'=' -f2; 
                                 ''', returnStdout: true).trim()
-def stage_name = "redis-4.0"
-                                pull_image(stage_name)  
+
+                                pull_image(image_name)  
                         }   
                         withAWS(role:env.ecr_role, roleAccount:env.dest_aws_account, region:env.dest_region) {  
                                 def image_name = sh(script: '''
                                         i=api_db
                                         cat uploaded_file.txt | grep ^api_db= | cut -d'=' -f2; 
                                 ''', returnStdout: true).trim()
-def stage_name = "redis-4.0"
+
                                 def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
-                                push_image(stage_name,date)
+                                push_image(image_name,date)
                         }
                     }
             }
