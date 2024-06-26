@@ -21,7 +21,7 @@ podTemplate(
         envVar(key: 'source_aws_account', value: '791532114280'),
         envVar(key: 'dest_aws_account', value: '791532114280'),
         envVar(key: 'source_aws_repo', value: 'dh-sit5'),
-        envVar(key: 'dest_aws_repo', value: 'dh-sit5'),
+        envVar(key: 'dest_aws_repo', value: 'dh-sit3'),
         envVar(key: 'fnf_url', value: 'signin.sit5.lsacone.com'),
         envVar(key: 'dh_url', value: 'dh.sit5.lsacone.com'),
         envVar(key: 'grant_type', value: 'client_credentials'),
