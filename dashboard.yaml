@@ -33,7 +33,6 @@ spec:
       value: {TARGET_ACCOUNT_NAME}
     image: 764100877844.dkr.ecr.us-east-1.amazonaws.com/dh-preview-apps:dh-metrics
     imagePullPolicy: Always
-    name: base
     resources:
       requests:
         cpu: '1'
