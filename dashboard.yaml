@@ -29,7 +29,7 @@ spec:
       value: sch-master
     - name: target_account
       value: {TARGET_ACCOUNT_NAME}
-    image: 764100877844.dkr.ecr.us-east-1.amazonaws.com/dh-preview-apps:dh-metrics
+    image: {AWS_ACCOUNT}.dkr.ecr.us-east-1.amazonaws.com/{ECR_REPO}:{IMAGE}
     imagePullPolicy: Always
     resources:
       requests:
