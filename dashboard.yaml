@@ -6,7 +6,8 @@ metadata:
   namespace: {MASTER_NAMESPACE}
 spec:
   containers:
-  - args:
+  - name: dashboard
+    args:
     - -c
     - sleep 2d
     command:
