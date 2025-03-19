@@ -9,11 +9,9 @@ spec:
   - name: dashboard
     args:
     - -c
-    - sleep 2d
+    - python3 /home/__main__.py
     command:
     - sh
-    # - python
-    # - /home/__main__.py
     env:
     - name: environment
       value: {ENVIRONMENT}
