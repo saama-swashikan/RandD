@@ -7,44 +7,44 @@ metadata:
 spec:
   containers:
   - command:
-      - sleep 2d
-      - python
-      - /home/__main__.py
+    - sleep 2d
+    - python
+    - /home/__main__.py
     env:
-      - name: account_id
-        value: 45aa30ff-9b33-4206-a2bc-795b96ff8905
-      - name: lsac_app_client_id
-        value: data-onboarding
-      - name: lsac_app_client_secret
-        value: {CLIENT_SECRET}
-      - name: lsac_oauth_endpoint
-        value: https://{DH_URL}
-      - name: pda_service
-        value: https://{DH_URL}.*
-      - name: PYTHONPATH
-        value: /home
-      - name: target_account
-        value: {TARGET_ACCOUNT_NAME}
-      image: 791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-apps:dh-metrics
-      imagePullPolicy: Always
-      name: base
-      resources:
-        requests:
-          cpu: '1'
-          memory: 500Mi
-      terminationMessagePath: /dev/termination-log
-      terminationMessagePolicy: File
-      volumeMounts:
-      - mountPath: /root/.postgresql
-        name: rds-ssl
-        readOnly: true
-      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-rjc6c
-        readOnly: true
-      - mountPath: /home/comprehend/vault
-        name: vault
-        readOnly: true
-      workingDir: /home
+    - name: account_id
+      value: 45aa30ff-9b33-4206-a2bc-795b96ff8905
+    - name: lsac_app_client_id
+      value: data-onboarding
+    - name: lsac_app_client_secret
+      value: {CLIENT_SECRET}
+    - name: lsac_oauth_endpoint
+      value: https://{DH_URL}
+    - name: pda_service
+      value: https://{DH_URL}.*
+    - name: PYTHONPATH
+      value: /home
+    - name: target_account
+      value: {TARGET_ACCOUNT_NAME}
+    image: 791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-apps:dh-metrics
+    imagePullPolicy: Always
+    name: base
+    resources:
+      requests:
+        cpu: '1'
+        memory: 500Mi
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /root/.postgresql
+      name: rds-ssl
+      readOnly: true
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-rjc6c
+      readOnly: true
+    - mountPath: /home/comprehend/vault
+      name: vault
+      readOnly: true
+    workingDir: /home
   nodeSelector:
     nodetype: job
   dnsPolicy: ClusterFirst
