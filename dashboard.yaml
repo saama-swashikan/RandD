@@ -41,9 +41,6 @@ spec:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: kube-api-access-rjc6c
       readOnly: true
-    - mountPath: /home/comprehend/vault
-      name: vault
-      readOnly: true
     workingDir: /home
   nodeSelector:
     nodetype: job
