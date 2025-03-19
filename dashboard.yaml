@@ -9,8 +9,7 @@ spec:
   - name: dashboard
     args:
     - -c
-    - python3 /home/__main__.py
-    - sleep 600
+    - python3 /home/__main__.py && sleep 600
     command:
     - sh
     env:
