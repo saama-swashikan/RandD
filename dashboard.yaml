@@ -8,8 +8,8 @@ spec:
   containers:
   - command:
     - sleep 2d
-    - python
-    - /home/__main__.py
+    # - python
+    # - /home/__main__.py
     env:
     - name: account_id
       value: 45aa30ff-9b33-4206-a2bc-795b96ff8905
