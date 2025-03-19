@@ -6,8 +6,11 @@ metadata:
   namespace: {MASTER_NAMESPACE}
 spec:
   containers:
-  - command:
+  - args:
+    - -c
     - sleep 2d
+    command:
+    - sh
     # - python
     # - /home/__main__.py
     env:
