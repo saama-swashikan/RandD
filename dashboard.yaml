@@ -14,6 +14,8 @@ spec:
     # - python
     # - /home/__main__.py
     env:
+    - name: environment
+      value: {ENVIRONMENT}
     - name: lsac_app_client_id
       value: data-onboarding
     - name: lsac_app_client_secret
