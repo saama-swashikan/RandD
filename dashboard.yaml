@@ -25,7 +25,7 @@ spec:
         value: /home
       - name: target_account
         value: {TARGET_ACCOUNT_NAME}
-      image: {AWS_ACCOUNT}.dkr.ecr.{DEST_REGION}.amazonaws.com/{DEST_AWS_REPO}:{MIGRATION_IMAGE}
+      image: 791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-apps:dh-metrics
       imagePullPolicy: Always
       name: base
       resources:
