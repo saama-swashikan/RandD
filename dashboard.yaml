@@ -14,8 +14,6 @@ spec:
     # - python
     # - /home/__main__.py
     env:
-    - name: account_id
-      value: 47d3dc84-f73d-4672-95d9-63a648ad24e9
     - name: lsac_app_client_id
       value: data-onboarding
     - name: lsac_app_client_secret
