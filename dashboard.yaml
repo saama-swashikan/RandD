@@ -7,6 +7,7 @@ metadata:
 spec:
   containers:
   - command:
+      - sleep 2d
       - python
       - /home/__main__.py
     env:
