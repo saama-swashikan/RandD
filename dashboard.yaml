@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   annotations:
-  name: dashboard-{BUILD_NUMBER}-{TARGET_ACCOUNT_NAME}
+  name: dashboard-{ENVIRONMENT}-{BUILD_NUMBER}
   namespace: {MASTER_NAMESPACE}
 spec:
   containers:
