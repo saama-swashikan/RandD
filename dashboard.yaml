@@ -25,7 +25,7 @@ spec:
       value: /home
     - name: target_account
       value: {TARGET_ACCOUNT_NAME}
-    image: 791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-apps:dh-metrics
+    image: 764100877844.dkr.ecr.us-east-1.amazonaws.com/dh-preview-apps:dh-metrics
     imagePullPolicy: Always
     name: base
     resources:
