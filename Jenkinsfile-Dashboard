@@ -37,7 +37,7 @@ podTemplate(
                 description: 'Select the Component', 
                 visibleItemCount: 10,
                 groovyScript: '''
-                return ['dev6', 'sit6', 'dev7', 'sit7', 'val2', 'preview', 'production']
+                return ['dev6', 'sit6', 'dev7', 'sit7', 'val2', 'preview']
             '''
             ),
             string(name: 'TENANTS', defaultValue: '', description: 'Specify the list of tenants to fetch'),
