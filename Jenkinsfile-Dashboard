@@ -1,0 +1,299 @@
+podTemplate(
+    containers: [
+        containerTemplate(
+            name: 'sch-code-builder',
+            image: '791532114280.dkr.ecr.us-east-1.amazonaws.com/sch-build-agent:terragrunt-always-latest',
+            command: 'cat',
+            ttyEnabled: true,
+            resourceLimitEphemeralStorage: '10Gi',
+            resourceLimitMemory: '16Gi'
+        )
+    ],
+    volumes: [
+        dynamicPVC(
+            requestsSize : '50Gi',
+            mountPath: '/var/lib/containers/storage/vfs'
+        )
+    ],
+    envVars: [
+        envVar(key: 'sch_infra_branch', value: 'main'),
+        envVar(key: 'git_user', value: 'comprehend-bot'),
+        envVar(key: 'image', value: 'dh-metrics'),
+    ]
+) 
+{
+    properties([
+        parameters([
+            extendedChoice(name: 'Task', multiSelectDelimiter: ',', quoteValue: false, 
+                type: 'PT_RADIO', 
+                description: 'Select the Component', 
+                visibleItemCount: 5,
+                groovyScript: '''
+                return ['Image_Push', 'Report']
+            '''
+            ),
+            extendedChoice(name: 'ENVIRONMENT', multiSelectDelimiter: ',', quoteValue: false, 
+                type: 'PT_RADIO', 
+                description: 'Select the Component', 
+                visibleItemCount: 10,
+                groovyScript: '''
+                return ['dev6', 'sit6', 'dev7', 'sit7', 'val2', 'preview', 'production']
+            '''
+            ),
+            string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'Specify the AWS region'),
+            string(name: 'TENANTS', defaultValue: '', description: 'Specify the list of tenants to fetch'),
+        ])
+    ])
+    node(POD_LABEL) {
+        stage('Image Push') {
+            if ( params.Task.contains('Image_Push') ) {
+                container('sch-code-builder') {
+                    script {
+                        source_aws_account = '791532114280'
+                        source_aws_repo = 'sch-apps'
+                        src_region = 'us-east-1'
+                        role_session_name = 'test'
+                        image_name = 'dh-metrics'
+                        dest_aws_account = '351054065682'
+                        dest_aws_repo = 'sch-val-apps'
+                        dest_region = 'us-east-1'
+                        awsCredentialsId = 'sch-perf-aws'
+                        def date = sh(script: "date +%Y_%m_%d-%H%M", returnStdout: true).trim()
+                        def image_name = sh(script: '''
+                            echo dh-metrics; 
+                        ''', returnStdout: true).trim()
+                        pull_image(image_name)  
+                        withAWS(credentials: awsCredentialsId, region: dest_region) {
+                            push_image(image_name,date)
+                        }
+                        dest_aws_account = '764100877844'
+                        dest_aws_repo = 'dh-preview-apps'
+                        dest_region = 'us-east-1'
+                        awsCredentialsId = 'sch-preview-account'
+                        pull_image(image_name)  
+                        withAWS(credentials: awsCredentialsId, region: dest_region) {
+                            push_image(image_name,date)
+                        }
+                    }
+                }
+            }
+        }
+        stage('Study Information') {
+            if ( params.Task.contains('Report') ) {
+                container('sch-code-builder') {
+                    script {
+                        def awsAccountId = ''
+                        def awsRoleArn = ''
+                        def awsCredentialsId = ''
+                        if (params.ENVIRONMENT == 'preview') {
+                            awsAccountId = '764100877844'
+                            role_session_name = 'jenkins-dh-preview'
+                            dh_url = 'sch.preview.lsac.cloud'
+                            client_secret = 'dh-preview-client-secret'
+                            master_namespace = 'dh-preview2'
+                            cluster_name = 'lsac-preview-sch'
+                            environment = 'preview'
+                            ecr_repo = 'dh-preview-apps'
+                            awsCredentialsId = 'sch-preview-account'
+                        } else if (params.ENVIRONMENT == 'val2') {
+                            awsAccountId = '351054065682'
+                            role_session_name = 'lsacone-dev-jenkins-dh'
+                            dh_url = 'dh.val2.lsacone.com'
+                            client_secret = 'val-client-secret'
+                            master_namespace = 'dh-val2'
+                            cluster_name = 'lsac-val2-sch'
+                            environment = 'val2'
+                            ecr_repo = 'sch-val-apps'
+                            awsCredentialsId = 'sch-perf-aws'
+                        } else if (params.ENVIRONMENT == 'production') {
+                            awsAccountId = '931775248714'
+                            role_session_name = 'jenkins-dh-prod'
+                            dh_url = 'dh.saama.cloud'
+                            client_secret = 'dh-prod-client-secret'
+                            master_namespace = 'dh-prod'
+                            cluster_name = 'prod-sch'
+                            environment = 'production'
+                            ecr_repo = 'dh-apps'
+                            awsCredentialsId = 'sch-prod-aws'
+                        } else if (params.ENVIRONMENT == 'dev6') {
+                            awsAccountId = '791532114280'
+                            role_session_name = 'lsacone-dev-jenkins-dh'
+                            dh_url = 'dh.dev6.lsacone.com'
+                            client_secret = 'sch-dev6-client-secret'
+                            master_namespace = 'dh-dev6'
+                            cluster_name = 'lsac-dev6-dh'
+                            environment = 'dev6'
+                            ecr_repo = 'sch-apps'
+                            awsCredentialsId = 'aws_jenkins_dev'
+                        } else if (params.ENVIRONMENT == 'dev7') {
+                            awsAccountId = '791532114280'
+                            role_session_name = 'lsacone-dev-jenkins-dh'
+                            dh_url = 'dh.dev7.lsacone.com'
+                            client_secret = 'sch-dev7-client-secret'
+                            master_namespace = 'dh-dev7'
+                            cluster_name = 'lsac-dev7-dh'
+                            environment = 'dev7'
+                            ecr_repo = 'sch-apps'
+                            awsCredentialsId = 'aws_jenkins_dev'
+                        } else if (params.ENVIRONMENT == 'sit7') {
+                            awsAccountId = '791532114280'
+                            role_session_name = 'lsacone-dev-jenkins-dh'
+                            dh_url = 'dh.sit7.lsacone.com'
+                            client_secret = 'sch-dev7-client-secret'
+                            master_namespace = 'dh-sit7'
+                            cluster_name = 'lsac-sit7-dh'
+                            environment = 'sit7'
+                            ecr_repo = 'sch-apps'
+                            awsCredentialsId = 'aws_jenkins_dev'
+                        } else if (params.ENVIRONMENT == 'sit6') {
+                            awsAccountId = '791532114280'
+                            role_session_name = 'lsacone-dev-jenkins-dh'
+                            dh_url = 'dh.sit6.lsacone.com'
+                            client_secret = 'sch-sit6-client-secret'
+                            master_namespace = 'dh-sit6'
+                            cluster_name = 'lsac-sit6-dh'
+                            environment = 'sit6'
+                            ecr_repo = 'sch-apps'
+                            awsCredentialsId = 'aws_jenkins_dev'
+                        }
+                        withAWS(credentials: awsCredentialsId, region: params.AWS_REGION) {
+                            withCredentials([string(credentialsId:client_secret, variable: 'client_secret'), string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token')]) {
+                                sh """
+                                    aws sts get-caller-identity
+                                    set +x
+                                    export \$(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \\
+                                        \$(aws sts assume-role \\
+                                        --role-arn arn:aws:iam::${awsAccountId}:role/LSACAdministratorsAccess \\
+                                        --role-session-name ${role_session_name} \\
+                                        --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \\
+                                        --output text))
+                                    set -x
+                                    aws sts get-caller-identity
+                                    set +x
+
+                                    git clone --branch \$sch_infra_branch https://github.com/saama-swashikan/RandD.git
+                                    cd RandD
+                                    sed -ibk "s|{BUILD_NUMBER}|\${BUILD_NUMBER}|g" dashboard.yaml
+                                    sed -ibk "s|{CLIENT_SECRET}|\$client_secret|g" dashboard.yaml
+                                    sed -ibk "s|{TARGET_ACCOUNT_NAME}|${params.TENANTS}|g" dashboard.yaml
+                                    sed -ibk "s|{DH_URL}|${dh_url}|g" dashboard.yaml
+                                    sed -ibk "s|{AWS_ACCOUNT}|${awsAccountId}|g" dashboard.yaml
+                                    sed -ibk "s|{DEST_REGION}|${params.AWS_REGION}|g" dashboard.yaml
+                                    sed -ibk "s|{MIGRATION_IMAGE}|${params.IMAGE_TAG}|g" dashboard.yaml
+                                    sed -ibk "s|{MASTER_NAMESPACE}|${master_namespace}|g" dashboard.yaml
+                                    sed -ibk "s|{ENVIRONMENT}|${environment}|g" dashboard.yaml
+                                    sed -ibk "s|{ECR_REPO}|${ecr_repo}|g" dashboard.yaml
+                                    sed -ibk "s|{IMAGE}|\${image}|g" dashboard.yaml
+                                    set -x
+
+                                    cat dashboard.yaml
+
+                                    aws eks update-kubeconfig --name ${cluster_name} --region ${params.AWS_REGION}
+                                    kubectl apply -f dashboard.yaml
+                                    pwd
+                                    ls
+                                    
+                                    set +x
+
+                                    # Retry logic for kubectl exec
+                                    attempts=0
+                                    until kubectl exec -n ${master_namespace} dashboard-${environment}-\${BUILD_NUMBER} -- bash -c ls || [ \$attempts -ge 5 ]; do
+                                        echo "Retrying kubectl exec... (Attempt: \$((++attempts)))"
+                                        attempts=\$((attempts+1))
+                                        sleep 5
+                                    done
+
+                                    if [ \$attempts -ge 5 ]; then
+                                        echo "Failed as kubectl Pod is in Error Status"
+                                        exit 1
+                                    fi
+
+
+                                    kubectl get pod dashboard-${environment}-\${BUILD_NUMBER} -n ${master_namespace} -o jsonpath='{.spec.containers[*].name}'
+
+                                    while [ ! -f dashboard/metrics_data* ]; do
+                                        until kubectl cp -c dashboard ${master_namespace}/dashboard-${environment}-\${BUILD_NUMBER}:/home ./dashboard/ || [ \$attempts -ge 10 ]; do
+                                            echo "Retrying kubectl exec... (Attempt: \$((++attempts)))"
+                                            attempts=\$((attempts+1))
+                                            sleep 5
+                                        done
+                                        
+                                        if [ \$attempts -ge 10 ]; then
+                                            echo "The Metrics file is not Found"
+                                            exit 1
+                                        fi
+
+                                        echo "Waiting for the file to be available..."
+                                        ls -l dashboard/
+                                        sleep 10
+                                    done
+                                    ls dashboard/
+                                    export filename=`ls dashboard/ | grep "metrics_data_"`
+                                    echo "Metrics file: \$filename"
+                                    echo " "
+                                    echo " "
+                                    set -x
+
+                                    set +x                                
+                                    echo " The Report is Generated for ${environment} for ${params.TENANTS} Tenants and its xlsx file is \$filename"
+                                    set -x
+                                """
+                                archiveArtifacts artifacts: "RandD/dashboard/metrics_data*", allowEmptyArchive: true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+def pull_image(image_name) {
+echo "$image_name"
+  sh """
+    aws sts get-caller-identity
+    set +x
+    export \$(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+    \$(aws sts assume-role \
+    --role-arn arn:aws:iam::${source_aws_account}:role/LSACAdministratorsAccess \
+    --role-session-name ${role_session_name} \
+    --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+    --output text))
+    set -x
+    aws sts get-caller-identity
+    aws ecr get-login-password --region ${src_region} | podman login --username AWS --password-stdin ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com
+    podman pull ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image_name}  
+    podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image_name} ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:${image_name}-new  
+  """
+}
+
+def push_image(image_name,date) {
+echo "$image_name"
+echo "$date"
+  sh """
+    aws sts get-caller-identity
+    set +x
+    export \$(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+    \$(aws sts assume-role \
+    --role-arn arn:aws:iam::${dest_aws_account}:role/LSACAdministratorsAccess \
+    --role-session-name ${role_session_name} \
+    --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+    --output text))
+    set -x
+    aws sts get-caller-identity
+    aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com
+    aws ecr describe-images --repository-name ${dest_aws_repo} --region ${dest_region}  > image_tag.txt
+    if grep -q "$image_name" image_tag.txt; 
+    then 
+        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+        aws ecr batch-delete-image --repository-name ${dest_aws_repo} --image-ids imageTag=$image_name
+        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image_name-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image_name  
+        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image_name
+    else
+        podman tag ${source_aws_account}.dkr.ecr.${src_region}.amazonaws.com/${source_aws_repo}:$image_name-new ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image_name  
+        aws ecr get-login-password --region ${dest_region} | podman login --username AWS --password-stdin ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com   
+        podman push ${dest_aws_account}.dkr.ecr.${dest_region}.amazonaws.com/${dest_aws_repo}:$image_name        
+    fi  
+  """
+
+}
