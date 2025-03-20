@@ -34,7 +34,7 @@ podTemplate(
             ),
             extendedChoice(name: 'ENVIRONMENT', multiSelectDelimiter: ',', quoteValue: false, 
                 type: 'PT_RADIO', 
-                description: 'Select the Component', 
+                description: 'Select the Environment (Select only with Report and dont select with Image_push)', 
                 visibleItemCount: 10,
                 groovyScript: '''
                 return ['dev6', 'sit6', 'dev7', 'sit7', 'val2', 'preview']
