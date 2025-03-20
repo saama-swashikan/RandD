@@ -74,6 +74,14 @@ podTemplate(
                         withAWS(credentials: awsCredentialsId, region: dest_region) {
                             push_image(image_name,date)
                         }
+                        dest_aws_account = '931775248714'
+                        dest_aws_repo = 'dh-apps'
+                        dest_region = 'us-east-1'
+                        awsCredentialsId = 'sch-prod-aws'
+                        pull_image(image_name)  
+                        withAWS(credentials: awsCredentialsId, region: dest_region) {
+                            push_image(image_name,date)
+                        }
                     }
                 }
             }
