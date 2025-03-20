@@ -87,7 +87,7 @@ podTemplate(
                             groovyScript: '''
                             return ['dev6', 'sit6', 'dev7', 'sit7', 'val2', 'preview', 'production']
                         '''
-                        )
+                        ),
                         string(name: 'TENANTS', defaultValue: '', description: 'Specify the list of tenants to fetch'),
                     ])
                 ])
