@@ -32,15 +32,6 @@ podTemplate(
                 return ['Image_Push', 'Report']
             '''
             ),
-            extendedChoice(name: 'ENVIRONMENT', multiSelectDelimiter: ',', quoteValue: false, 
-                type: 'PT_RADIO', 
-                description: 'Select the Component', 
-                visibleItemCount: 10,
-                groovyScript: '''
-                return ['dev6', 'sit6', 'dev7', 'sit7', 'val2', 'preview', 'production']
-            '''
-            ),
-            string(name: 'TENANTS', defaultValue: '', description: 'Specify the list of tenants to fetch'),
         ])
     ])
     node(POD_LABEL) {
@@ -87,6 +78,19 @@ podTemplate(
         }
         stage('Study Information') {
             if ( params.Task.contains('Report') ) {
+                properties([
+                    parameters([
+                        extendedChoice(name: 'ENVIRONMENT', multiSelectDelimiter: ',', quoteValue: false, 
+                            type: 'PT_RADIO', 
+                            description: 'Select the Component', 
+                            visibleItemCount: 10,
+                            groovyScript: '''
+                            return ['dev6', 'sit6', 'dev7', 'sit7', 'val2', 'preview', 'production']
+                        '''
+                        )
+                        string(name: 'TENANTS', defaultValue: '', description: 'Specify the list of tenants to fetch'),
+                    ])
+                ])
                 container('sch-code-builder') {
                     script {
                         def awsAccountId = ''
@@ -206,7 +210,7 @@ podTemplate(
                                     # Retry logic for kubectl exec
                                     attempts=0
                                     until kubectl exec -n ${master_namespace} dashboard-${environment}-\${BUILD_NUMBER} -- bash -c ls || [ \$attempts -ge 5 ]; do
-                                        echo "Retrying kubectl exec... (Attempt: \$((++attempts)))"
+                                        echo "Retrying kubectl exec... (Attempt: \$attempts)"
                                         attempts=\$((attempts+1))
                                         sleep 5
                                     done
@@ -221,7 +225,7 @@ podTemplate(
 
                                     while [ ! -f dashboard/metrics_data* ]; do
                                         until kubectl cp -c dashboard ${master_namespace}/dashboard-${environment}-\${BUILD_NUMBER}:/home ./dashboard/ || [ \$attempts -ge 10 ]; do
-                                            echo "Retrying kubectl exec... (Attempt: \$((++attempts)))"
+                                            echo "Retrying kubectl cp... (Attempt: \$attempts)"
                                             attempts=\$((attempts+1))
                                             sleep 5
                                         done
