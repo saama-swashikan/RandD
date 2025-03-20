@@ -18,7 +18,7 @@ podTemplate(
     envVars: [
         envVar(key: 'sch_infra_branch', value: 'main'),
         envVar(key: 'git_user', value: 'comprehend-bot'),
-        envVar(key: 'image', value: 'dh-metrics'),
+        envVar(key: 'image', value: 'dh-metrics')
     ]
 ) 
 {
@@ -93,6 +93,7 @@ podTemplate(
                         def awsAccountId = ''
                         def awsRoleArn = ''
                         def awsCredentialsId = ''
+                        def region = 'us-east-1'
                         if (params.ENVIRONMENT == 'preview') {
                             awsAccountId = '764100877844'
                             role_session_name = 'jenkins-dh-preview'
@@ -164,7 +165,7 @@ podTemplate(
                             ecr_repo = 'sch-apps'
                             awsCredentialsId = 'aws_jenkins_dev'
                         }
-                        withAWS(credentials: awsCredentialsId, region: params.AWS_REGION) {
+                        withAWS(credentials: awsCredentialsId, region: region) {
                             withCredentials([string(credentialsId:client_secret, variable: 'client_secret'), string(credentialsId: 'comprehend-bot-github-token', variable: 'git_token')]) {
                                 sh """
                                     aws sts get-caller-identity
@@ -186,7 +187,7 @@ podTemplate(
                                     sed -ibk "s|{TARGET_ACCOUNT_NAME}|${params.TENANTS}|g" dashboard.yaml
                                     sed -ibk "s|{DH_URL}|${dh_url}|g" dashboard.yaml
                                     sed -ibk "s|{AWS_ACCOUNT}|${awsAccountId}|g" dashboard.yaml
-                                    sed -ibk "s|{DEST_REGION}|${params.AWS_REGION}|g" dashboard.yaml
+                                    sed -ibk "s|{DEST_REGION}|${region}|g" dashboard.yaml
                                     sed -ibk "s|{MIGRATION_IMAGE}|${params.IMAGE_TAG}|g" dashboard.yaml
                                     sed -ibk "s|{MASTER_NAMESPACE}|${master_namespace}|g" dashboard.yaml
                                     sed -ibk "s|{ENVIRONMENT}|${environment}|g" dashboard.yaml
@@ -196,7 +197,7 @@ podTemplate(
 
                                     cat dashboard.yaml
 
-                                    aws eks update-kubeconfig --name ${cluster_name} --region ${params.AWS_REGION}
+                                    aws eks update-kubeconfig --name ${cluster_name} --region ${region}
                                     kubectl apply -f dashboard.yaml
                                     pwd
                                     ls
